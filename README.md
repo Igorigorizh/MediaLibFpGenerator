@@ -1,0 +1,2 @@
+# MediaLibFpGenerator
+ acoustId Fingerprints generator
