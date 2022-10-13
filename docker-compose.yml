@@ -24,7 +24,7 @@ services:
       - log:/home/fpgenerator/MediaLibFpGenerator/log
       - music:/home/fpgenerator/MediaLibFpGenerator/music
       - config:/home/fpgenerator/MediaLibFpGenerator/config  
-    command: celery --app=worker.app worker -P threads --concurrency=1 --loglevel=info --logfile=log/celery.log  
+    command: celery --app=celerytools.worker.app worker -P threads --concurrency=1 --loglevel=info --logfile=log/celery.log  
     depends_on:
      - redis
     restart: always 
