@@ -29,9 +29,9 @@ from medialib.myMediaLib_cue import parseCue
 from medialib.myMediaLib_cue import GetTrackInfoVia_ext
 
 
-from medialib import BASE_ENCODING
-from medialib import mymedialib_cfg
-from medialib import medialib_fp_cfg
+from fpgenerator import BASE_ENCODING
+from fpgenerator import mymedialib_cfg
+from fpgenerator import medialib_fp_cfg
 
 
 from functools import wraps
