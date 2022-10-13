@@ -10,6 +10,7 @@ RUN echo "fpgenerator build ver is ${medialib_bld_ver}"
 RUN git clone https://github.com/Igorigorizh/MediaLibManager.git
 WORKDIR /home/fpgenerator/MediaLibManager
 RUN python -m setup install
+WORKDIR /home/fpgenerator
 RUN medialib_bld_ver=${medialib_bld_ver} git clone https://github.com/Igorigorizh/MediaLibFpGenerator.git
 WORKDIR /home/fpgenerator/MediaLibFpGenerator
 ENV PYTHONPATH="$PYTHONPATH:./fpgenerator"
