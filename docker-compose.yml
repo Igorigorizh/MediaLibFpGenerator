@@ -1,0 +1,54 @@
+version: '3.9'
+services:
+  redis:
+    image: "redis/redis-stack"
+    hostname: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+
+    
+  worker:
+    build:
+      context: .
+      dockerfile: ./fpgenerator/Dockerfile
+      args:
+      - medialib_bld_ver=1
+    image: fpgenerator
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0  
+    volumes:
+      - log:/home/fpgenerator/MediaLibFpGenerator/log
+      - music:/home/fpgenerator/MediaLibFpGenerator/music
+      - config:/home/fpgenerator/MediaLibFpGenerator/config  
+    command: celery --app=worker.app worker -P threads --concurrency=1 --loglevel=info --logfile=log/celery.log  
+    depends_on:
+     - redis
+    restart: always 
+    
+  dashboard:
+    image: fpgenerator
+    command:  celery --broker=redis://redis:6379/0 flower --port=5555 --loglevel=INFO
+    ports:
+      - "5556:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - worker
+      
+volumes:
+   redis_data:
+   config:
+   log:
+   db:
+   music:
+     driver: local
+     driver_opts:
+        device: "${DEVICE}"
+        o: "${DRIVER_OPTIONS}"
+        type: cifs
