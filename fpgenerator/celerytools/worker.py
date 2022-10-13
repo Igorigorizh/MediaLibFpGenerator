@@ -2,17 +2,17 @@ import os
 import time
 import functools
 import acoustid
-import base64
+
 
 from celery import Celery
 from celery import group
 from celery_progress.backend import ProgressRecorder
 
-from fpgenerator.scheduler import music_folders_generation_scheduler
-from fpgenerator.tools import get_FP_and_discID_for_album
-from fpgenerator.tools import acoustID_lookup_celery_wrapper
-from fpgenerator.tools import MB_get_releases_by_discid_celery_wrapper
-from fpgenerator.tools import find_new_music_folder
+from fpgenerator.celerytools.scheduler import music_folders_generation_scheduler
+from fpgenerator.celerytools.tools import get_FP_and_discID_for_album
+from fpgenerator.celerytools.tools import acoustID_lookup_celery_wrapper
+from fpgenerator.celerytools.tools import MB_get_releases_by_discid_celery_wrapper
+from fpgenerator.celerytools.tools import find_new_music_folder
 
 app = Celery(__name__)
 app.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379")
@@ -29,23 +29,6 @@ def hello():
 	return True
 	
 
-def base64_convert(func):
-	@functools.wraps(func)
-	def wrapper(*args, **kwargs):
-		val = func(*args, **kwargs)
-		if type(val) == list:
-			val = [base64.b64encode(a) for a in val]
-		elif type(val) == bytes:
-			val = base64.b64encode(val)
-		elif type(val) == dict:
-			val = [base64.b64encode(val[a]) for a in val]
-		return val
-	return wrapper	
-
-	
-
-	
-#music_folders_generation_scheduler = app.task(name='music_folders_generation_scheduler-new_recogn_name',serializer='json',bind=True)(base64_convert(music_folders_generation_scheduler))
 music_folders_generation_scheduler = app.task(name='music_folders_generation_scheduler-new_recogn_name',serializer='json',bind=True)(music_folders_generation_scheduler)
 
 
