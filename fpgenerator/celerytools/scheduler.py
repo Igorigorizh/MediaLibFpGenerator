@@ -21,10 +21,9 @@ import time
 import logging
 from pathlib import Path
 
-from medialib.myMediaLib_init import readConfigData
+
 
 from medialib import BASE_ENCODING
-from medialib import mymedialib_cfg
 from medialib import medialib_fp_cfg
 
 from configparser import ConfigParser
@@ -38,7 +37,7 @@ from medialib.myMediaLib_tools import redis_state_notifier
 
 from functools import wraps
 
-cfgD = readConfigData(mymedialib_cfg)
+
 cfg_fp = ConfigParser()
 cfg_fp.read(medialib_fp_cfg)
 
