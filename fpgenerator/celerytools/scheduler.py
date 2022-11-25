@@ -10,46 +10,91 @@ import codecs
 import re
 import subprocess
 import asyncio
-from multiprocessing import Pool, cpu_count
-from itertools import tee
+import functools
+
 import configparser
 
 from redis import Redis
+from celery_progress.backend import ProgressRecorder
 
-import musicbrainzngs
+#import musicbrainzngs
 import time
 import logging
 from pathlib import Path
 
 
 
-from fpgenerator import BASE_ENCODING
-from fpgenerator import medialib_fp_cfg
+from celerytools import BASE_ENCODING
+#from fpgenerator import medialib_fp_cfg
 
-from configparser import ConfigParser
+#from configparser import ConfigParser
 
 import warnings
-from fpgenerator.celerytools.tools import get_FP_and_discID_for_album
-from fpgenerator.celerytools.tools import find_new_music_folder
-from fpgenerator.celerytools.tools import redis_state_notifier
-
-#from worker import app
 
 from functools import wraps
 
+def celery_progress_indicator(function):
+	@functools.wraps(function)
+	def wrapper(task_id,*args):
+		progress_recorder = ProgressRecorder(task_id)
+		progress_recorder_descr = 'medialib-job-folder-scan-progress-media_files'
+		result = function(*args)
+		# After function call
+		# ...
+		return result
+	return wrapper
+	
 
-cfg_fp = ConfigParser()
-cfg_fp.read(medialib_fp_cfg)
+class JobInternalStateRedisKeeper:
+	# запоминаем аргументы декоратора
+	#@JobInternalStateRedisKeeper(state_name='medialib-job-fp-albums-total-progress',action='progress')		
+	def __init__(self, state_name='medialib:', action='init'):
+		progress_recorder = ProgressRecorder(self)
+		progress_recorder_descr = 'medialib-job-folder-scan-progress-first-run'
+		self._state_name = state_name
+		self._action = action
+	
+
+	# декоратор общего назначения
+	def __call__(self, func):
+		@wraps(func)
+		def wrapper(*args, **kwargs):
+            
+			val = func(*args, **kwargs)
+			redis_state_notifier(self._state_name, self._action)
+			
+			return val
+		return wrapper
+
+	
+
+#from medialib.myMediaLib_fs_util import find_new_music_folder
+from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
+#from fpgenerator.celerytools.tools import redis_state_notifier
+find_new_music_folder = celery_progress_indicator(mfsh().find_new_music_folder)
+
+
+
+
+#from worker import app
+
+
+
+
+
+
+#cfg_fp = ConfigParser()
+#cfg_fp.read(medialib_fp_cfg)
 
 logger = logging.getLogger('controller_logger.scheduler')
 
-musicbrainzngs.set_useragent("python-discid-example", "0.1", "your@mail")
+#musicbrainzngs.set_useragent("python-discid-example", "0.1", "your@mail")
 
-redis_connection = Redis(host=cfg_fp['REDIS']['host'], port=cfg_fp['REDIS']['port'], db=0)
+#redis_connection = Redis(host=cfg_fp['REDIS']['host'], port=cfg_fp['REDIS']['port'], db=0)
 
 import celery_progress
 
-def music_folders_generation_scheduler(self, folder_node_path, prev_fpDL, prev_music_folderL,*args):	
+def music_folders_generation_scheduler(task_id, folder_node_path, prev_fpDL, prev_music_folderL,*args):	
 	# Генерация линейного списка папок с аудио данным с учетом вложенных папок
 	# Промежуточные статусы писать в Redis!!!!
 	
@@ -69,7 +114,7 @@ def music_folders_generation_scheduler(self, folder_node_path, prev_fpDL, prev_m
 			music_folderL = prev_music_folderL
 			print("Media Folders structure is taken from prev music_folderL with len:",len(music_folderL))
 	else:	
-		dirL = find_new_music_folder(self,[folder_node_path],[],[],'initial')
+		dirL =find_new_music_folder(task_id,[folder_node_path],[],[],'initial')
 		music_folderL = list(map(lambda x: bytes(x+'/',BASE_ENCODING),dirL['music_folderL']))
 		print("Media folders structure build with initial folders:",len(music_folderL))
 	

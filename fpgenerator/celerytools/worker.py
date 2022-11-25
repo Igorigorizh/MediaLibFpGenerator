@@ -6,13 +6,18 @@ import acoustid
 
 from celery import Celery
 from celery import group
-from celery_progress.backend import ProgressRecorder
+import sys
+print('\n',"in worker: sys_path:",sys.path)
 
-from fpgenerator.celerytools.scheduler import music_folders_generation_scheduler
-from fpgenerator.celerytools.tools import get_FP_and_discID_for_album
-from fpgenerator.celerytools.tools import acoustID_lookup_celery_wrapper
-from fpgenerator.celerytools.tools import MB_get_releases_by_discid_celery_wrapper
-from fpgenerator.celerytools.tools import find_new_music_folder
+from celerytools.scheduler import music_folders_generation_scheduler
+from celerytools.tools import get_FP_and_discID_for_album
+from celerytools.tools import acoustID_lookup_celery_wrapper
+from celerytools.tools import MB_get_releases_by_discid_celery_wrapper
+
+
+#from fpgenerator.celerytools.tools import find_new_music_folder
+
+from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
 
 app = Celery(__name__)
 app.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379")
@@ -22,6 +27,9 @@ app.conf.task_serializer = 'pickle'
 app.conf.result_serializer = 'pickle'
 app.conf.accept_content = ['application/json', 'application/x-python-serialize']
 
+
+	
+
 @app.task(name="hello")
 def hello():
 	time.sleep(10)
@@ -29,10 +37,12 @@ def hello():
 	return True
 	
 
+
+
 music_folders_generation_scheduler = app.task(name='music_folders_generation_scheduler-new_recogn_name',serializer='json',bind=True)(music_folders_generation_scheduler)
 
 
-find_new_music_folder = app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)(find_new_music_folder)
+find_new_music_folder = app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)(mfsh().find_new_music_folder)
 
 	
 
@@ -66,6 +76,7 @@ def callback_MB_get_releases_by_discid_request(result):
 
 @app.task(name="worker.callback_FP_gen")
 def callback_FP_gen(result):
+	# Тут также позже подключить прогресс ддля отслеживание всего прогресса поальбомно
 	folderL = result
 	#applicable  only for cue image scenario
 	for folder_name in folderL:
@@ -80,12 +91,7 @@ MB_get_releases_by_discid_celery_wrapper = app.task(name='MB_get_releases_by_dis
 
 fp_post_processing_req = group(callback_MB_get_releases_by_discid_request.s(), callback_acoustID_request.s())
 
-def fp_multy_scheduler(app, path):
-	task_list = []
-	task_first_res = app.send_task('music_folders_generation_scheduler-new_recogn_name',(p2,[],[]))
-	
-
-if __name__ == '__main__':
+def main():
 	app.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://192.168.1.65:6379")
 	app.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://192.168.1.65:6379")
 	app.control.purge()
@@ -97,8 +103,12 @@ if __name__ == '__main__':
 	p5 = '/home/fpgenerator/MediaLibFpGenerator/music/MUSIC/ORIGINAL_MUSIC/ORIGINAL_ROCK/Pink Floyd/_HI_RES/1975 - Wish You Were Here (SACD-R)'
 	p2 = '/home/fpgenerator/MediaLibFpGenerator/music/MUSIC/ORIGINAL_MUSIC/ORIGINAL_CLASSICAL/Vivaldi/Antonio Vivaldi - 19 Sinfonias and Concertos for Strings and Continuo/'
 	p6 = '/home/fpgenerator/MediaLibFpGenerator/music/MUSIC/ORIGINAL_MUSIC/ORIGINAL_ROCK/Pink Floyd/Pink Floyd - Dark Side Of The Moon (1973) [MFSL UDCD II 517]/'
-	task_first_res = app.send_task('music_folders_generation_scheduler-new_recogn_name',(p3,[],[]),link=callback_FP_gen.s())
+	#task_first_res = app.send_task('music_folders_generation_scheduler-new_recogn_name',(p2,[],[]),link=callback_FP_gen.s())
 	path = '/home/fpgenerator/MediaLibManager/music/MUSIC/ORIGINAL_MUSIC'
-	#task_first_res = app.send_task('find_new_music_folder-new_recogn_name',([path],[],[],'initial'))
+	task_first_res = app.send_task('find_new_music_folder-new_recogn_name',([path],[],[],'initial'))
 	#task_folders_list = app.send_task('find_new_music_folder-new_recogn_name',([path],[],[],'initial'),link=callback_find_new_music_folder.s())
 	print(task_first_res,type(task_first_res))
+	
+
+if __name__ == '__main__':
+	main()

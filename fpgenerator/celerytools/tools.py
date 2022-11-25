@@ -28,10 +28,13 @@ from medialib.myMediaLib_cue import simple_parseCue
 from medialib.myMediaLib_cue import parseCue
 from medialib.myMediaLib_cue import GetTrackInfoVia_ext
 
+from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
+find_new_music_folder = mfsh().find_new_music_folder
+find_new_music_folder_simple = mfsh().find_new_music_folder_simple
 
-from fpgenerator import BASE_ENCODING
-from fpgenerator import mymedialib_cfg
-from fpgenerator import medialib_fp_cfg
+from celerytools import BASE_ENCODING
+from celerytools import mymedialib_cfg
+from celerytools import medialib_fp_cfg
 
 
 from functools import wraps
@@ -691,170 +694,7 @@ def worker_fingerprint(file_path):
 	return (fp,os.path.split(file_path)[-1])	
 	
 
-def do_mass_album_FP_and_AccId(folder_node_path,min_duration,prev_fpDL,prev_music_folderL,*args):	
-	# Генерация FP и AccuesticIDs по альбомам из указанной дирректории (folder_node_path), для загрузок двойных альбомов и других массовых загрузок
-	
-	if not os.path.exists(folder_node_path):
-		print('---!Album path Error:%s - not exists'%folder_node_path)
-		return 
-	cnt=1	
-	fpDL = []
-	music_folderL = []
-	use_prev_res = False
-	prev_fpDL_used = False
-	dump_path = ''
 
-	if prev_music_folderL:
-		if len(prev_music_folderL)>0:
-			music_folderL = prev_music_folderL
-			print("Media Folders structure is taken from prev music_folderL with len:",len(music_folderL))
-	else:	
-		dirL = find_new_music_folder([folder_node_path],[],[],'initial')
-		music_folderL = list(map(lambda x: bytes(x+'/',BASE_ENCODING),dirL['music_folderL']))
-		print("Media folders structure build with initial folders:",len(music_folderL))
-	
-	tmp_music_folderL = music_folderL
-	
-	if prev_fpDL:
-		if len(prev_fpDL) > 0:
-			print(len(prev_fpDL),prev_fpDL[0:4])
-			
-			tmp_music_folderL = list(set(music_folderL) - set([a['album_path'] for a in prev_fpDL]))
-			
-			fpDL = prev_fpDL
-			cnt = len(music_folderL) - len(tmp_music_folderL) + 1
-			prev_fpDL_used = True
-			print("Media Folders structure is recalculated from prev music_folderL with len:",len(tmp_music_folderL))
-
-		if fpDL == []:		
-			print('Error with last result folder. Not found in current folders structures')
-			return{'music_folderL':music_folderL,'last_folder':last_folder}
-	print(tmp_music_folderL)
-	
-
-	mode_dif = 30
-	t_all_start = time.time()
-	process_time = 	0
-	redis_state_notifier('medialib-job-fp-albums-total-progress','init')
-	for album_path in tmp_music_folderL:
-		fpRD = {}
-		
-		print(cnt, ' of:',len(music_folderL),'--> Album folder:', [album_path])
-		t_start = time.time()
-		try:
-			cnt+=1
-			process_time = 0
-			fpRD = get_FP_and_discID_for_album(album_path,min_duration,*args)
-			process_time = 	int(time.time()-t_start)
-			fpRD['album_path']=album_path
-			fpRD['process_time'] = process_time
-			fpDL.append(fpRD)	
-			print('album finished in:',	process_time, "time since starting the job:",int(time.time()-t_all_start))
-			print('\n-------------------   Validation ------------------')
-			validatedD = album_FP_discid_response_validate([fpRD])
-			print()
-		except Exception as e:	
-			print("Exception with FP generation [%s]: \n in %s"%(str(e),str(album_path)))	
-			fpRD = {'RC':-3,'error_logL':["Exception with FP generation [%s]:  [%s]"%(str(e),str(album_path))],'album_path':album_path,'process_time': process_time}
-			fpDL.append(fpRD)	
-
-			
-		if cnt%mode_dif == 0:
-			if dump_path:
-				try:
-					os.remove(dump_path)
-				except Exception as e:
-					print('Last dump not deleted:',str(e))
-					
-			fname=b'fpgen_%i.dump'%int(time.time())
-			dump_path = album_path+fname
-			d = ''
-			try:	
-				with open(dump_path, 'wb') as f:
-					d = pickle.dump({'fpDL':fpDL,'music_folderL':music_folderL,'dump_path':dump_path},f)
-			except Exception as e:
-				print('Error in pickle',e)
-			print('Saved temp dump in:',fname)	
-	
-	redis_state_notifier('medialib-job-fp-albums-total-progress','progress-stop')	
-	d = ''
-	fname=b'fpgen_%i.dump'%int(time.time())
-	dump_path = folder_node_path+fname
-	try:	
-		with open(folder_node_path+fname, 'wb') as f:
-			d = pickle.dump( {'fpDL':fpDL,'music_folderL':music_folderL,'dump_path':dump_path},f)
-	except Exception as e:
-		print('Error in pickle',e)
-	
-	time_stop_diff = time.time()-t_all_start
-	print('\n\n\n')
-	print("*********************************************************************")
-	print("**********Generation Summary for %i albums. All takes:%i sec.***********************"%(len(fpDL),int(time_stop_diff)))
-	print("*********************************************************************\n")
-	for a in fpDL:
-		if 'RC' not in a: a['RC'] = -3
-		if 'error_logL' not in a: a['error_logL'] = []
-		
-		if a['RC'] < 0:
-			print("RC=(",a['RC'],")",a['album_path'],'IN TIME:',a['process_time'])
-			print('*****************************')
-			for b in a['error_logL']:
-				print(b)
-			print('*****************************')
-			print()
-
-			
-	print('Some statistics:')
-	if fpDL:
-		print("Collected: albums number %i, time pro album %i sec."%(len(fpDL),int(time_stop_diff/len(fpDL))))	
-	if prev_fpDL_used:	
-		print("Skipped [FP is ready]:",len(prev_fpDL))
-	else:
-		print("All FP are initialy generagetd")
-	print("Error while generation FP:",len([a['RC'] for a in fpDL if a['RC'] < 0]))
-	print("Albums with bad FP:",len([a['RC'] for a in fpDL if a['RC'] < 0]))
-	print("Albums with OK FP:",len([a['RC'] for a in fpDL if a['RC'] > 0]))
-	
-	check_MB_discID_in_fpDL(fpDL)
-	
-	return {'fpDL':fpDL,'music_folderL':music_folderL}
-	
-def check_MB_discID_in_fpDL(fpDL):
-	cnt = 0
-	no_discid_cnt = more_release_cnt = 	no_mb_data_for_discid_cnt = no_release_data_cnt = one_release_cnt = 0
-	for item in fpDL:
-		if 'MB_discID' in item:
-			if 'disc' in item['MB_discID']:
-				if 'release-list' in item['MB_discID']['disc']: 
-					if len(item['MB_discID']['disc']['release-list']) == 1:
-						print(cnt,item['MB_discID']['disc']['release-list'][0]['title'],'\n',item['album_path'],'utf-8')
-						print(cnt,item['discID'])
-						one_release_cnt+=1
-					elif len(item['MB_discID']['disc']['release-list']) > 1:
-						print(cnt, "! Releases:",len(item['MB_discID']['disc']['release-list']),'\n',item['album_path'],'utf-8')
-						more_release_cnt+=1
-					else:
-						print(cnt,"MB out of data [release-list] is empty for %s: %s "%(str(item['MB_discID']['disc']['id']),str(item['album_path'],'utf-8')))
-						no_mb_data_for_discid_cnt+=1
-						#return (item['MB_discID']['disc'],item['album_path'])
-					cnt+=1
-				else:                
-					print('-r', end=' ')
-					no_release_data_cnt+=1
-					cnt+=1		
-			else:
-				cnt+=1	
-				continue
-				
-		else:
-			print(cnt,"No discID in:",item['album_path'])
-			no_discid_cnt +=1
-			cnt+=1
-	print('No discId generated in:',no_discid_cnt)		
-	print('No MB release data for existed mb discId:',no_mb_data_for_discid_cnt)
-	print('Strange case with no release:',no_release_data_cnt)
-	print('OK - One release in MB:',one_release_cnt)
-	print('OK - More releases in MB:',more_release_cnt)
 
 def guess_TOC_from_tracks_list(tracksL):
 	track_offset_cnt = 0
@@ -938,508 +778,189 @@ def get_TOC_from_log(album_folder):
 	return{'TOC_dataL':TOC_dataL,'discidInput':discidInputD,'toc_string':toc_string}
 	
 		
-def get_acoustID_from_FP_collection(fpDL):
-	API_KEY = 'cSpUJKpD'
-	resD = {}
-	album_OK_cnt = 0
-	album_missed_cnt = 0
-	album_partly_covered=0
-	album_RC_ge_0_cnt = 0
-	meta = ["recordings","recordingids","releases","releaseids","releasegroups","releasegroupids", "tracks", "compress", "usermeta", "sources"]
-	meta = ["recordings"]
-
-	
-	fpDL_len = len([a['RC'] for a in fpDL if a['RC']>0])  
-	for a in fpDL:
-		if a['RC']>0:
-			album_RC_ge_0_cnt +=1
-			print(a['album_path'])
-			track_OK_cnt = 0
-			for trackD in a['FP']:
-				duration, fp = trackD['fp']
-				time.sleep(.3)
-				response = acoustid.lookup(API_KEY, fp, duration,meta)
-				res = acoustid.parse_lookup_result(response)
-				trackD['recording_idL']=[]
-				for score, recording_id, title, artist in res:
-					resD = {'score':score,'recording_id': recording_id,'title':title, 'artist':artist}
-					trackD['recording_idL'].append(resD)
-
-				if len(trackD['recording_idL'])> 0:
-					track_OK_cnt+=1
-					print(len(trackD['recording_idL']), end=' ')
-			if track_OK_cnt == 0:
-				print("[ :-( Album missed")
-				album_missed_cnt+=1
-			elif	len(a['FP'])	> track_OK_cnt:
-				album_partly_covered +=1
-				print("[ Partly covered: %i of %i tracks."%(track_OK_cnt,len(a['FP'])))
-				
-			elif	len(a['FP'])	== track_OK_cnt:
-				album_OK_cnt+=1
-				print("[ Album - OK: %i tracks.  "%track_OK_cnt)
-			print(album_RC_ge_0_cnt,' .Total OK:{0} -> [{3:.0%}] Missed:{1} -> [{4:.0%}] Partly: {2} -> [{5:.0%}] from {6}.'.format(album_OK_cnt,album_missed_cnt,album_partly_covered,
-			float(album_OK_cnt)/fpDL_len,float(album_missed_cnt)/fpDL_len,float(album_partly_covered)/fpDL_len,fpDL_len))	
-		print()
-	return resD		
-
-def identify_music_folder(init_dirL,*args):
-	#print args
-	logger.debug('in identify_music_folder - start [%s]'%str(init_dirL))
-	music_folderL = []
-	file_extL = ['.flac','.mp3','.ape','.wv','.m4a','.dsf']
-
-	for init_dir in init_dirL:
-		if not isinstance(init_dir, str):
-			print(init_dir)
-			init_dirL[init_dirL.index(init_dir)] = init_dir.decode('utf8')
-		else:
-			if not os.path.exists(init_dir):
-				print(init_dir, ': does not exists')
-				return {'music_folderL':[]}
-	i = 0
-	t = time.time()
-	print("Folders scanning ...")
-	for new_folder in init_dirL:
-		print("new_folder:",new_folder)
-		with os.scandir(new_folder) as it:
-			for entry in it:
-				print(entry)
-				if not entry.name.startswith('.') and entry.is_file():
-					if os.path.splitext(entry.name)[-1] in file_extL:
-
-						dir_name = os.path.dirname(''.join((new_folder,entry.name)))
-						print(dir_name)
-						#print [join(root.decode('utf8'),a.decode('utf8'))]
-						if dir_name not in music_folderL:
-					
-							music_folderL.append(dir_name)
-							#print 'dir_name:',type(dir_name),[dir_name]
-							break
-
-	print()
-	time_stop_diff = time.time()-t
-	print('Scanning for music folder: Finished in %i sec'%(int(time_stop_diff)))
-	logger.debug('in identify_music_folder found[%s]- finished'%str(len(music_folderL)))
-	return {'music_folderL':music_folderL}
-	
 
 
-def bulld_subfolders_list(self, init_dirL, *args):
-	#1. job run
-	#task_first_res = c_a.send_task('find_new_music_folder-new_recogn_name',([path],[],[],'initial')) 
-	#2. get progress results 
-	#res = celery_progress.backend.Progress(task_first_res).get_info()
-	# if res['state'] == 'PROGRESS': ....
-	resL = []
-	if self:
-		progress_recorder = ProgressRecorder(self)
-		progress_recorder_descr = 'medialib-job-folder-scan-progress-first-run'
 
-	for init_dir in init_dirL:
-		if 'verbose' in args:
-			print()
-			if not os.path.exists(init_dir):
-				print(init_dir,'  Not exists')
-				continue
-			else:
-				print(init_dir,'  Ok')
-		i = 0		
-		for root, dirs, files in os.walk(init_dir):
-			for a in dirs:
-				if 'verbose' in args:
-					if i%100 == 0:
-						print(i, end=' ',flush=True)
+# def bulld_subfolders_list(self, init_dirL, *args):
+	# #1. job run
+	# #task_first_res = c_a.send_task('find_new_music_folder-new_recogn_name',([path],[],[],'initial')) 
+	# #2. get progress results 
+	# #res = celery_progress.backend.Progress(task_first_res).get_info()
+	# # if res['state'] == 'PROGRESS': ....
+	# resL = []
+	# if self:
+		# progress_recorder = ProgressRecorder(self)
+		# progress_recorder_descr = 'medialib-job-folder-scan-progress-first-run'
+
+	# for init_dir in init_dirL:
+		# if 'verbose' in args:
+			# print()
+			# if not os.path.exists(init_dir):
+				# print(init_dir,'  Not exists')
+				# continue
+			# else:
+				# print(init_dir,'  Ok')
+		# i = 0		
+		# for root, dirs, files in os.walk(init_dir):
+			# for a in dirs:
+				# if 'verbose' in args:
+					# if i%100 == 0:
+						# print(i, end=' ',flush=True)
 					
 					
-				i+=1
-				if self:
-					if i%10 == 0:
-						#redis_state_notifier(state_name='medialib-job-folder-progress', action='progress')
-						progress_recorder.set_progress(i + 1, i + 100, description=progress_recorder_descr)
+				# i+=1
+				# if self:
+					# if i%10 == 0:
+						# #redis_state_notifier(state_name='medialib-job-folder-progress', action='progress')
+						# progress_recorder.set_progress(i + 1, i + 100, description=progress_recorder_descr)
 
-				yield(Path(root).as_posix(),a)
-				#resL.append((Path(root).as_posix(),a))	
-	if self:
-		#redis_state_notifier(state_name='medialib-job-folder-progress', action='progress')
-		progress_recorder.set_progress(i, i, description=progress_recorder_descr)
-	return
+				# yield(Path(root).as_posix(),a)
+				# #resL.append((Path(root).as_posix(),a))	
+	# if self:
+		# #redis_state_notifier(state_name='medialib-job-folder-progress', action='progress')
+		# progress_recorder.set_progress(i, i, description=progress_recorder_descr)
+	# return
 
-def find_new_music_folder_simple(self,init_dirL,*args):
-	# similar to find_new_music_folder but more simple withou db filter and pickle
-	logger.info('in find_new_music_folder_simple - start')
-	folders_list = tuple(bulld_subfolders_list(None,dirL,'verbose'))	
-	t = time.time()
-	print()
-	print('Passed:',time.time()-t)
-	joined_folder_list = list(set([join(a[0],a[1]) for a in folders_list]))
-	joined_folder_list.sort()
-	t = time.time()
-	music_folderL = collect_media_files_in_folder_list(self,joined_folder_list,'verbose')
-	print()
-	print('Passed:',int(time.time() - t))
-	logger.debug('in find_new_music_folder_simple found[%s]- finished'%str(len(music_folderL)))
-	return {'folder_list':folders_list,'NewFolderL':joined_folder_list,'music_folderL':music_folderL}
+# def find_new_music_folder_simple(self,init_dirL,*args):
+	# # similar to find_new_music_folder but more simple withou db filter and pickle
+	# logger.info('in find_new_music_folder_simple - start')
+	# folders_list = tuple(bulld_subfolders_list(None,dirL,'verbose'))	
+	# t = time.time()
+	# print()
+	# print('Passed:',time.time()-t)
+	# joined_folder_list = list(set([join(a[0],a[1]) for a in folders_list]))
+	# joined_folder_list.sort()
+	# t = time.time()
+	# music_folderL = collect_media_files_in_folder_list(self,joined_folder_list,'verbose')
+	# print()
+	# print('Passed:',int(time.time() - t))
+	# logger.debug('in find_new_music_folder_simple found[%s]- finished'%str(len(music_folderL)))
+	# return {'folder_list':folders_list,'NewFolderL':joined_folder_list,'music_folderL':music_folderL}
 	
 #@JobInternalStateRedisKeeper(state_name='medialib-job-folder-progress', action='init')		
-def find_new_music_folder(self,init_dirL, prev_folderL, DB_folderL,*args):
-	# по умолчанию ищет музыкальную папку в пересечении множеств исходного дерева папок (сохраненного в ml_folder_tree_buf_path)и узла,
-	# который содержит новые данные + если запрошено по наличию папки в таблице album из DB_folderL
+# def find_new_music_folder(self,init_dirL, prev_folderL, DB_folderL,*args):
+	# # по умолчанию ищет музыкальную папку в пересечении множеств исходного дерева папок (сохраненного в ml_folder_tree_buf_path)и узла,
+	# # который содержит новые данные + если запрошено по наличию папки в таблице album из DB_folderL
 	
-	#print args
-	logger.info('in find_new_music_folder - start')
-	f_l = []
-	new_folderL = []
-	resBuf_save_file_name = ''
-	f_name = ''
+	# #print args
+	# logger.info('in find_new_music_folder - start')
+	# f_l = []
+	# new_folderL = []
+	# resBuf_save_file_name = ''
+	# f_name = ''
 	
-	creation_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+	# creation_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
 	
-	# Новый сценарий получение списка части дерева папок относительно искомого узла (init_dirL) из БД
+	# # Новый сценарий получение списка части дерева папок относительно искомого узла (init_dirL) из БД
 	
 	
-	if args != ():
-		if type(args[0]) == dict:
-			if 'resBuf_save' in args[0]:
-				resBuf_save_file_name = args[0]['resBuf_save']
-				f_name = cfg_fp['FOLDERS']['ml_folder_tree_buf_path']
+	# if args != ():
+		# if type(args[0]) == dict:
+			# if 'resBuf_save' in args[0]:
+				# resBuf_save_file_name = args[0]['resBuf_save']
+				# f_name = cfg_fp['FOLDERS']['ml_folder_tree_buf_path']
 
 	
-	print('resBuf_save_file_name',resBuf_save_file_name)
-	for init_dir in init_dirL:
-		if not isinstance(init_dir, str):
-			print('Not string:',init_dir)
-			init_dirL[init_dirL.index(init_dir)] = init_dir.decode('utf8')
-		else:
-			if not os.path.exists(init_dir):
-				print(init_dir, 'does not exists')
-				return {'folder_list':[],'NewFolderL':[]}
-	i = 0
-	t = time.time()
-	print("Folders scanning ...")
+	# print('resBuf_save_file_name',resBuf_save_file_name)
+	# for init_dir in init_dirL:
+		# if not isinstance(init_dir, str):
+			# print('Not string:',init_dir)
+			# init_dirL[init_dirL.index(init_dir)] = init_dir.decode('utf8')
+		# else:
+			# if not os.path.exists(init_dir):
+				# print(init_dir, 'does not exists')
+				# return {'folder_list':[],'NewFolderL':[]}
+	# i = 0
+	# t = time.time()
+	# print("Folders scanning ...")
 	
-	f_l= tuple(bulld_subfolders_list(self,init_dirL))			
-	print()
-	time_stop_diff = time.time()-t
-	print('Takes sec:',time_stop_diff)
-	if prev_folderL == [] and not 'initial' in args:
-		print('First run: Finished in %i sec'%(int(time_stop_diff)))
-		if resBuf_save_file_name != '':
-			f = open(f_name,'wb')
-			d = pickle.dump({'folder_list':f_l,'NewFolderL':[],'music_folderL':[],'creation_time':creation_time},f)
-			f.close()
-			print('save buffer',f_name)
-			logger.info('in find_new_music_folder - finished: Buff saved in:%s'%(f_name))
-			return {'resBuf_save':f_name}
-		else:
-			return {'folder_list':f_l,'NewFolderL':[]}
+	# f_l= tuple(bulld_subfolders_list(self,init_dirL))			
+	# print()
+	# time_stop_diff = time.time()-t
+	# print('Takes sec:',time_stop_diff)
+	# if prev_folderL == [] and not 'initial' in args:
+		# print('First run: Finished in %i sec'%(int(time_stop_diff)))
+		# if resBuf_save_file_name != '':
+			# f = open(f_name,'wb')
+			# d = pickle.dump({'folder_list':f_l,'NewFolderL':[],'music_folderL':[],'creation_time':creation_time},f)
+			# f.close()
+			# print('save buffer',f_name)
+			# logger.info('in find_new_music_folder - finished: Buff saved in:%s'%(f_name))
+			# return {'resBuf_save':f_name}
+		# else:
+			# return {'folder_list':f_l,'NewFolderL':[]}
 	
-	if DB_folderL != []:
-		prev_folderL = list(set([join(a[0],a[1]) for a in DB_folderL]).difference(set([join(a[0],a[1]) for a in prev_folderL])))
-	# Вычисление пересеченеия новых папок с последним сохраненным деревом папок
-	new_folderL = list(set([join(a[0],a[1]) for a in f_l]).difference(set([join(a[0],a[1]) for a in prev_folderL])))
-	#print(new_folderL[0])
-	#new_folderL = list(set(f_l).difference(set(prev_folderL)))
-	new_folderL.sort()
+	# if DB_folderL != []:
+		# prev_folderL = list(set([join(a[0],a[1]) for a in DB_folderL]).difference(set([join(a[0],a[1]) for a in prev_folderL])))
+	# # Вычисление пересеченеия новых папок с последним сохраненным деревом папок
+	# new_folderL = list(set([join(a[0],a[1]) for a in f_l]).difference(set([join(a[0],a[1]) for a in prev_folderL])))
+	# #print(new_folderL[0])
+	# #new_folderL = list(set(f_l).difference(set(prev_folderL)))
+	# new_folderL.sort()
 
-	if len(new_folderL) == 0:
-		print('No Change: Finished')
-	elif len(new_folderL) > 0:
-		print('Changes found!', len(new_folderL))
-		#print(new_folderL)
-	# Collect music folders
-	music_folderL = []
+	# if len(new_folderL) == 0:
+		# print('No Change: Finished')
+	# elif len(new_folderL) > 0:
+		# print('Changes found!', len(new_folderL))
+		# #print(new_folderL)
+	# # Collect music folders
+	# music_folderL = []
 	
-	music_folderL = collect_media_files_in_folder_list(self,new_folderL)
+	# music_folderL = collect_media_files_in_folder_list(self,new_folderL)
 	
-	# check if initial folder root folder itself containes media
-	if not music_folderL:
-		music_folderL = collect_media_files_in_folder_list(self, init_dirL)
+	# # check if initial folder root folder itself containes media
+	# if not music_folderL:
+		# music_folderL = collect_media_files_in_folder_list(self, init_dirL)
 						
 	
 	
-	music_folderL = list(set(map(lambda x: x.replace('\\','/'),music_folderL)))	
-	if resBuf_save_file_name != '':
-		f = open(f_name,'wb')
-		d = pickle.dump({'folder_list':f_l,'NewFolderL':new_folderL,'music_folderL':music_folderL,'creation_time':creation_time},f)
-		f.close()
-		print('save buffer',f_name)
-		logger.info('in find_new_music_folder - finished: Buff saved in:%s'%(f_name))
-		return {'resBuf_save':f_name}
+	# music_folderL = list(set(map(lambda x: x.replace('\\','/'),music_folderL)))	
+	# if resBuf_save_file_name != '':
+		# f = open(f_name,'wb')
+		# d = pickle.dump({'folder_list':f_l,'NewFolderL':new_folderL,'music_folderL':music_folderL,'creation_time':creation_time},f)
+		# f.close()
+		# print('save buffer',f_name)
+		# logger.info('in find_new_music_folder - finished: Buff saved in:%s'%(f_name))
+		# return {'resBuf_save':f_name}
 	
 
-	redis_state_notifier(state_name='medialib-job-folder-progress', action='progress-stop')
-	logger.debug('in find_new_music_folder found[%s]- finished'%str(len(music_folderL)))
-	return {'folder_list':f_l,'NewFolderL':new_folderL,'music_folderL':music_folderL}
+	# redis_state_notifier(state_name='medialib-job-folder-progress', action='progress-stop')
+	# logger.debug('in find_new_music_folder found[%s]- finished'%str(len(music_folderL)))
+	# return {'folder_list':f_l,'NewFolderL':new_folderL,'music_folderL':music_folderL}
 	
-def collect_media_files_in_folder_list(self, folderL,*args):
-	music_folderL = []
-	if self:
-		progress_recorder = ProgressRecorder(self)
-		progress_recorder_descr = 'medialib-job-folder-scan-progress-media_files'
-	file_extL = ['.flac','.mp3','.ape','.wv','.m4a','.dsf']
-	i = 0
-		#print("new_folder:",[new_folder])
-	for new_folder in folderL:	
-		for root, dirs, files in os.walk(new_folder):
-			for a in files:
-				if os.path.splitext(a)[-1] in file_extL:
-					if root not in music_folderL:
-						music_folderL.append(Path(root).as_posix())
-						break
-		if 'verbose' in args:
-			if i%100 == 0:
-				print(i, end=' ',flush=True)				
-		if self:
-			if i%10 == 0:
-				progress_recorder.set_progress(i + 1, len(folderL), description=progress_recorder_descr)				
-		i+=1	
-	if self:
-		progress_recorder.set_progress(i, len(folderL), description=progress_recorder_descr)		
-	return 	music_folderL				
+# def collect_media_files_in_folder_list(self, folderL,*args):
+	# music_folderL = []
+	# if self:
+		# progress_recorder = ProgressRecorder(self)
+		# progress_recorder_descr = 'medialib-job-folder-scan-progress-media_files'
+	# file_extL = ['.flac','.mp3','.ape','.wv','.m4a','.dsf']
+	# i = 0
+		# #print("new_folder:",[new_folder])
+	# for new_folder in folderL:	
+		# for root, dirs, files in os.walk(new_folder):
+			# for a in files:
+				# if os.path.splitext(a)[-1] in file_extL:
+					# if root not in music_folderL:
+						# music_folderL.append(Path(root).as_posix())
+						# break
+		# if 'verbose' in args:
+			# if i%100 == 0:
+				# print(i, end=' ',flush=True)				
+		# if self:
+			# if i%10 == 0:
+				# progress_recorder.set_progress(i + 1, len(folderL), description=progress_recorder_descr)				
+		# i+=1	
+	# if self:
+		# progress_recorder.set_progress(i, len(folderL), description=progress_recorder_descr)		
+	# return 	music_folderL				
 					
 
-def path_to_posix(f_path):
-	return Path(f_path).as_posix()
+# def path_to_posix(f_path):
+	# return Path(f_path).as_posix()
 
 
 	
-def is_discId_release_in_FP_response(discId_MB_resp,acoustId_resp):
-	recordingsL = []
-	release_groupL = []
-	releasesL = []
-	mediumDL = []
-	if 'disc' not in discId_MB_resp:
-		print('Error key [disc] is missing in:',discId_MB_resp)
-		return False
-	releasesL_discId = [a['release-group']['id'] for a in discId_MB_resp['disc']['release-list']]
-	if 'results' not in acoustId_resp:
-		print('Error in:',acoustId_resp)
-		return False
-
-	releasesL_FP = collect_MB_release_from_FP_response(acoustId_resp)['release_groupL']
-	#print('discId:',releasesL_discId)
-	#print('FP:',releasesL_FP)
 	
-	for a in releasesL_discId:
-		if a in releasesL_FP:
-			return True
-	return 	False	
-	
-def match_discId_release_in_FP_response(discId_MB_resp,acoustId_resp,Release_ReleaseGroupD):
-	recordingsL = []
-	
-	release_groupL_FP = releases_FP = releases_discId = release_groupL_discId = []
-	mediumDL = []
-	release_groupL_discId = [a['release-group']['id'] for a in discId_MB_resp['disc']['release-list']]
-	releases_discId = [a['id'] for a in discId_MB_resp['disc']['release-list']]
-	
-	if 'results' not in acoustId_resp:
-		print('Error in:',acoustId_resp)
-		return False
-	release_groupL_FP = collect_MB_release_from_FP_response(acoustId_resp)['release_groupL']
-	releases_FP = collect_MB_release_from_FP_response(acoustId_resp)['releasesL']
-	#print('discId:',releasesL_discId)
-	#print('FP:',releasesL_FP)
-	
-	for a in release_groupL_discId:
-		if a in release_groupL_FP and a not in Release_ReleaseGroupD['release-group']:
-			Release_ReleaseGroupD['release-group'].append(a)		
-			
-	for a in releases_discId:
-		if a in releases_FP and a not in Release_ReleaseGroupD['release-list']:
-			Release_ReleaseGroupD['release-list'].append(a)		
-			
-	return 	{'release-list':Release_ReleaseGroupD['release-list'],'release-group':Release_ReleaseGroupD['release-group']}
-
-def build_FP_db_tracks_record(fpDL):
-	# база FP - будет основой формирования метаданных медиатеки. формируется полностью автоматически, с возможностью добавления набора альбомов или единичных #альбомов. 
-	# содержит статистику покрытия FP, discId, положительными резульатами запросов по FP к musicbrainz содержит ссылки по CRC32 на рабочую medialib.db3
-	# даст оценку доли автоматического и ручного ведения метаданных для рабочей medialib.db3
-	# должна содержать на начальном этапе потрэковую информацию "recording", альбомную "releases", артистов, работы "works"
-	# подготовка записи в базе FP для последующего сохранения в БД
-	# учитывать полное или частичное отсутствие FP для трэка - это позволит иметь статистику покрытия медиа коллекции FP, делать регулярный повторный расчет,
-	# иметь снимок всей медиатеки
-	for item in fpDL:
-		if item['scenarioD']['cue_state']['only_tracks_wo_CUE']:
-			for track in 'normal_trackL':
-				pass
-	return db_record	
-
-def album_FP_discid_response_validate(fpDL):
-	# валидация ответов MB и acoustId (далее просто ответы MB) для собранных потрэково и поальбомно acousticId fingerprints и discid
-	# задача, по набору FP и discID однозначно идентифицироваь релиз. Чем больше критериев валидации исполнено, тем выше вероятность праильной идентификации
-	# релиза альбома. наличие discID упрощает выбор правильного релиза. Если его нет, необходимо идентифицировать релиз только на основании набора FP всех трэков альбома.
-	# когда нет данных  по discID или они не достоверны?: TOC не сформирован, ТОС не идентифицируется в ответе MB, результаты по TOC не совпдадают с результатами FP (различные релизы)
-	# сценарии валидации:
-	# 1. все FP трэков принадлежат одному релизу по этому релизу совпадает количество трэков в ответе MB = > альбом - accepted
-	## 1.1для очень коротких трэков <20 сек acoustId не дает разультата. такой трэк надо просто пропустить. не считая его за ошибку. 
-	## 1.2совпадение может быть только по части трэков. для остальной части FP не идентифицируется на сервисе, возможно некорректное формирование FP локально, что становиться критичным для коротких трэков.
-	## 1.3возможны ошибки при получении результата, в этом случае отфильтровав по коду ошибки, заново запросить результат для FP
-	# 2. при наличии TOC и положительной его идентификации соотв. релиз совпадает с результатами соотв. релизов по FP трэков. при наличии нескольких релизов связанных с FP трэков, момогает идентифицировать правильный релиз. Если релиз всего один и он совпал по всем FP и discId => альбом strongly accepted 
-	# discId релиз
-	index = 0
-	release_id_checkL = []
-	Release_ReleaseGroupD = {'release-list':[],'release-group':[]}
-	ReleaseGroupL = []
-	not_confirmed_cnt = confirmed_cnt = partly_confirmed_cnt = partly_fp_confirmed_cnt = hi_res_cnt = failed_cnt = 0
-	
-	for item in fpDL:
-		Release_ReleaseGroupD = {'release-list':[],'release-group':[]}
-		print('\n',index, '  ========== %s'%(item['album_path'] ))
-		if 'convDL' not in item:
-			print('Hi-res proc issue')
-			hi_res_cnt +=1
-			failed_cnt+=1
-			index+=1
-			continue
-		
-		
-		#release_id = check_album_from_acoustId_resp_list(item['convDL'],len(item['convDL']))['release_id']
-		#print('release_id:',release_id)
-		# scenario without discId
-		if 'MB_discID' not in item:
-			print('i', end=' ')
-			print('Error (2138) with fpDL index:',index,item['album_path'])
-			return
-			
-		if item['MB_discID']:
-			print('==== MB_discID scenario:')
-			track_index = 1
-			in_MB_discID_cnt = 0
-			for trac_data in item['convDL']:
-				if is_discId_release_in_FP_response(item['MB_discID'], trac_data['response']):
-					print('*',end=' ')
-					Release_ReleaseGroupD = match_discId_release_in_FP_response(item['MB_discID'], trac_data['response'],Release_ReleaseGroupD)
-					in_MB_discID_cnt +=1
-				else:
-					if trac_data['fp'][0] < 20:
-						print('\n very short track %i:[%i]sec'%(track_index,int(trac_data['fp'][0])))
-					elif 'error' in trac_data['response']:
-						print('\n with MB_discID scenario issue in track %i: FP service return error. Recall FP response'%(track_index))
-					elif trac_data['response']['results'] == []:	
-						print('\n with MB_discID scenario issue in track %i: FP service result is empty. Recalculate and recheck FP'%(track_index))
-				
-				try:	
-					recordinds = collect_MB_release_from_FP_response( trac_data['response'])['recordingsL']		
-					print('Recording id:',recordinds)
-				except Exception as e:
-					print('Error in recording extraction',str(e))
-
-				track_index+=1	
-			if in_MB_discID_cnt == len(item['convDL']):
-				print('MB_discID and FP results successuly validated')
-				confirmed_cnt+=1
-				
-			if in_MB_discID_cnt < len(item['convDL']) and in_MB_discID_cnt > 0:
-				print('MB_discID and FP results only partly [%i of %i] validated'%(in_MB_discID_cnt,len(item['convDL'])))
-				partly_confirmed_cnt+=1	
-			elif in_MB_discID_cnt == 0:
-				not_confirmed_cnt+=1
-				
-		else:
-			print('		==== Only FP scenario:')
-			release_id_checkL = []
-			
-			for trac_data in item['convDL']:
-				release_id = get_release_from_acoustId_resp_list_via_track_number(item['convDL'],len(item['convDL']))
-				if not release_id:
-				#	failed_cnt+=1
-					continue
-					
-				release_id_checkL.append(release_id)
-				try:	
-					recordinds = collect_MB_release_from_FP_response( trac_data['response'])['recordingsL']		
-					print('Recording id:',recordinds)
-				except Exception as e:
-					print('Error in recording extraction',str(e))	
-					
-			if 	len(release_id_checkL) == len(item['convDL']) and len(list(set(release_id_checkL))) == 1:	
-				print('		release from MB resp:', set(release_id_checkL))
-				confirmed_cnt+=1
-				Release_ReleaseGroupD['release-list'] = set(release_id_checkL).pop()
-			elif len(release_id_checkL) != len(item['convDL']) and len(list(set(release_id_checkL))) > 1:
-				print('		Wrong release from MB resp:',set(release_id_checkL))
-				partly_fp_confirmed_cnt+=1
-				Release_ReleaseGroupD['release-list'] = set(release_id_checkL).pop()
-				#for trac_data in item['convDL']:
-				#	return collect_MB_release_from_FP_response(trac_data['response'])
-			else:
-				failed_cnt+=1
-		item['ReleasesD'] = Release_ReleaseGroupD		
-		print('ReleasesD:',Release_ReleaseGroupD)
-		index+=1			
-	print('Confirmed: %i, Partly_confirmed: %i, Partly fp confirmed:%i, Total confirmed: %i, Failed %i'%(confirmed_cnt,partly_confirmed_cnt,partly_fp_confirmed_cnt,confirmed_cnt+partly_confirmed_cnt+partly_fp_confirmed_cnt,failed_cnt))	
-	print('hi_res issue:',hi_res_cnt)
-	print('Not confirmed:',not_confirmed_cnt)
-	
-	return release_id_checkL
-	
-def collect_MB_release_from_FP_response(acoustId_resp):
-	recordingsL = []
-	release_groupL = []
-	releasesL = []
-	mediumDL = []
-	release_id = 0
-	if 'results' not in acoustId_resp and 'error' in acoustId_resp:
-		print('Error in response')
-		return{'recordingsL':recordingsL,'release_groupL':release_groupL,'releasesL':releasesL,'mediumDL':mediumDL,'error':acoustId_resp['error']}
-	for res_item in acoustId_resp['results']:
-		if 'recordings' not in res_item:
-			continue
-		for rcrds in res_item['recordings']:
-			if 'id' not in rcrds:
-				#print('Error in FP response rec id',rcrds)
-				return{'recordingsL':recordingsL,'release_groupL':release_groupL,'releasesL':releasesL,'mediumDL':mediumDL}
-			#else:	
-			recordingsL.append(rcrds['id'])
-			#yield rcrds['id']
-			if 'releasegroups' in rcrds:
-				
-				for rel_group in rcrds['releasegroups']:
-					##if 'id' not in rel_group:
-					#	print('Error in FP response rel_group id',rel_group)
-					#	continue
-					#else:	
-					release_groupL.append(rel_group['id'])
-					
-
-					for release in rel_group['releases']:
-						#if 'id' not in release:
-						#	print('Error in FP response release id',release)
-						#	continue
-						#else:	
-						releasesL.append(release['id'])
-						
-						for medium in release['mediums']:
-							#print(medium)
-							#if 'id' not in medium:
-							#	print('Error in FP response medium id',medium)
-							#	continue
-							#else:	
-							medium['release_id'] = release['id']
-							#if track_num:
-							#if medium['track_count'] == track_num:
-							#		return{'recordingsL':recordingsL,'release_groupL':release_groupL,'releasesL':releasesL,'mediumDL':mediumDL,'release_id':release['id']}
-								
-							mediumDL.append(medium)
-
-
-	return{'recordingsL':recordingsL,'release_groupL':release_groupL,'releasesL':releasesL,'mediumDL':mediumDL}
-	
-def get_release_from_acoustId_resp_list_via_track_number(acoustId_respL,track_number):
-	
-	try:
-
-		mediumDL_List = [collect_MB_release_from_FP_response(a['response'])['mediumDL'] for a in acoustId_respL]
-		for c in [b for b in mediumDL_List if b != []]:
-			return set(e['release_id'] for e in c if e['track_count'] == track_number ).pop() 
-		
-	except Exception as e:
-		
-		print('error in get_release_from_acoustId_resp_list_via_track_number [%s]'%str(e))
-			
-	return 
 		
 def acoustID_lookup_celery_wrapper(self,*fp_args):
 	scoreL = fp_item = []
@@ -1450,37 +971,6 @@ def acoustID_lookup_celery_wrapper(self,*fp_args):
 	meta = ["recordings","recordingids","releases","releaseids","releasegroups","releasegroupids", "tracks", "compress", "usermeta", "sources"]
 	response=acoustid.lookup(API_KEY, fp_args[1], fp_args[0],meta)
 	print(response)
-	
-	# if 'error' in response:
-		# err_cnt+=1
-	# else:
-		# if 'results' in response:
-			# l = [item['score'] for item in response['results']  if 'score' in item]
-			# if l != []:
-				# scoreL.append(max(l))
-	# if response == {'results': [], 'status': 'ok'}:
-		# duration_init = fp_args[0]
-		# fp_item = list(fp_args)
-		# print('\n Empty FP response. duration [%s], trying to guess duration'%str(duration_init))
-		# for i in range(1,10):
-			# fp_item[0] = fp_item[0] - i
-			# response=acoustid.lookup(API_KEY, fp_item[1], fp_item[0],meta)
-			# if response != {'results': [], 'status': 'ok'}:
-				# if 'results' in response:
-					# print('Succeceed with duration:',fp_item['fp'][0])
-					# l = [item['score'] for item in response['results']  if 'score' in item]
-					# if l != []:
-						# scoreL.append(max(l))
-						
-					# break
-		# if response == {'results': [], 'status': 'ok'}:		
-			# fp_item['fp'][0] = duration_init
-					
-		# fp_item['response'] = response
-	
-	
-	
-	
 	
 	return {'response':response,'fname':fp_args[2]}
 
@@ -1509,30 +999,6 @@ async def acoustID_lookup_wrapper(fp):
 async def acoustID_lookup_wrapper_parent(fp):
     return await acoustID_lookup_wrapper(fp)	
 
-if __name__ == '__main__':
-	import argparse
-	job_list = []
-	parser = argparse.ArgumentParser(description='media lib tools')
-	parser.add_argument('ml_folder_tree', metavar='saves medialib folders as pickled object, taking the path from config',
-                        help='ml_folder_tree')	
-	args = parser.parse_args()	
-	
-	cfg_fp.read(medialib_fp_cfg)
-	nas_path_prefix = cfg_fp['FOLDERS']['nas_path_prefix']
-	ml_folder_tree_buf_path = cfg_fp['FOLDERS']['ml_folder_tree_buf_path']
-	audio_files_path_list = cfg_fp['FOLDERS']['audio_files_path_list']
-	
-	dirL = json.loads(cfg_fp.get('FOLDERS',"audio_files_path_list"))
-	
-	creation_time = time.time()
-	#res = bulld_subfolders_list(None,dirL,'verbose')
-	folders_list_obj = find_new_music_folder_simple(None,dirL)
-	print()
-	print('Passed:', time.time()-creation_time)
-	try:
-		with open(ml_folder_tree_buf_path, 'wb') as f:
-			d = pickle.dump({'folder_list':folders_list_obj['folder_list'],'NewFolderL':folders_list_obj['NewFolderL'],'music_folderL':folders_list_obj['music_folderL'],'creation_time':creation_time},f)
-	except Exception as e:
-		print('Error in pickle',e)				
+			
 	
 	
