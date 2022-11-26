@@ -67,14 +67,14 @@ from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
 class Media_FileSystem_Helper_Progress(mfsh):
 	def __init__(self, descr = 'medialib-job', *args):
 		super().__init__()
-		progress_recorder = ProgressRecorder(self)
+		self.progress_recorder = ProgressRecorder(self)
 		self.progress_recorder_descr = descr
 		self._EXT_CALL_FREQ = 10
 		
 	def iterrration_extention_point(self, *args):
 		""" iterrration_extention_point designed for redefine in a child class"""
 		if self._current_iteration%self._EXT_CALL_FREQ == 0:
-			progress_recorder.set_progress(self._current_iteration, i+self._current_iteration, description=progress_recorder_descr)	
+			self.progress_recorder.set_progress(self._current_iteration, i+self._current_iteration, description=self.progress_recorder_descr)	
 
 
 find_new_music_folder = celery_progress_indicator(mfsh().find_new_music_folder)
