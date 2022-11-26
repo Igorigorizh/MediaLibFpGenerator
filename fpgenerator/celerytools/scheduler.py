@@ -65,9 +65,9 @@ class JobInternalStateRedisKeeper:
 from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
 
 class Media_FileSystem_Helper_Progress(mfsh):
-	def __init__(self, descr = 'medialib-job', *args):
+	def __init__(self, progress_recorder_obj, descr = 'medialib-job', *args):
 		super().__init__(self)
-		self.progress_recorder = ProgressRecorder(self)
+		self.progress_recorder = progress_recorder_obj
 		self.progress_recorder_descr = descr
 		self._EXT_CALL_FREQ = 10
 		
