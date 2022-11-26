@@ -72,9 +72,9 @@ class Media_FileSystem_Helper_Progress(mfsh):
 		self._EXT_CALL_FREQ = 10
 		
 	def iterrration_extention_point(self, *args):
-		""" iterrration_extention_point designed for redefine in a child class"""
+		""" iterrration_extention_point redefine with celery progress_recorder"""
 		if self._current_iteration%self._EXT_CALL_FREQ == 0:
-			self.progress_recorder.set_progress(self._current_iteration, i+self._current_iteration, description=self.progress_recorder_descr)	
+			self.progress_recorder.set_progress(self._current_iteration, self._current_iteration+1, description=self.progress_recorder_descr)	
 
 
 find_new_music_folder = celery_progress_indicator(mfsh().find_new_music_folder)
