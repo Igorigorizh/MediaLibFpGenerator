@@ -6,6 +6,7 @@ import acoustid
 
 from celery import Celery
 from celery import group
+from celery_progress.backend import ProgressRecorder
 import sys
 print('\n',"in worker: sys_path:",sys.path)
 
@@ -33,7 +34,7 @@ def hello():
 	print("Hello there")
 	return True
 descr = 'medialib-job-folder-scan-progress-media_files'	
-find_new_music_folder = app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)(mfsh_progress(descr).find_new_music_folder)
+find_new_music_folder = app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)(mfsh_progress(ProgressRecorder,descr).find_new_music_folder)
 
 	
 
