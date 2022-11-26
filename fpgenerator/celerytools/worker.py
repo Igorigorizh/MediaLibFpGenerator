@@ -34,9 +34,10 @@ def hello():
 	print("Hello there")
 	return True
 descr = 'medialib-job-folder-scan-progress-media_files'	
-find_new_music_folder = app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)(mfsh_progress(ProgressRecorder,descr).find_new_music_folder)
 
-	
+
+find_new_music_folder = app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)(mfsh_progress(descr).find_new_music_folder)
+
 
 @app.task(name="worker.callback_acoustID_request")
 def callback_acoustID_request(result):

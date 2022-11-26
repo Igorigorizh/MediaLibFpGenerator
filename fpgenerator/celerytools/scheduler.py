@@ -32,7 +32,7 @@ from functools import wraps
 def celery_progress_indicator(function):
 	@functools.wraps(function)
 	def wrapper(prodr_mess = 'medialib-job-folder-scan-progress-media_files',*args):
-		self.progress_recorder = ProgressRecorder(task_id)
+		self.progress_recorder = ProgressRecorder(self)
 		progress_recorder_descr = prodr_mess
 		result = function(*args)
 		# After function call
@@ -65,15 +65,19 @@ class JobInternalStateRedisKeeper:
 from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
 
 class Media_FileSystem_Helper_Progress(mfsh):
-	def __init__(self, progress_recorder_obj, descr = 'medialib-job', *args):
+	def __init__(self, descr = 'medialib-job', *args):
 		super().__init__()
-		self.progress_recorder = progress_recorder_obj
+		self.progress_recorder = None
 		self.progress_recorder_descr = descr
 		self._EXT_CALL_FREQ = 10
+	
+	def find_new_music_folder(self):
+		self.progress_recorder = ProgressRecorder(self)
+		super().find_new_music_folder()
 		
 	def iterrration_extention_point(self, *args):
 		""" iterrration_extention_point redefine with celery progress_recorder"""
-		if self._current_iteration%self._EXT_CALL_FREQ == 0:
+		if self._current_iteration%self._EXT_CALL_FREQ == 0 and self.progress_recorder:
 			self.progress_recorder.set_progress(self._current_iteration, self._current_iteration+1, description=self.progress_recorder_descr)	
 
 
