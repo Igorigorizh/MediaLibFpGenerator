@@ -16,28 +16,24 @@ import configparser
 
 from redis import Redis
 from celery_progress.backend import ProgressRecorder
-
-#import musicbrainzngs
+import celery_progress
 import time
 import logging
 from pathlib import Path
 
-
-
 from celerytools import BASE_ENCODING
-#from fpgenerator import medialib_fp_cfg
 
-#from configparser import ConfigParser
 
 import warnings
 
 from functools import wraps
 
+
 def celery_progress_indicator(function):
 	@functools.wraps(function)
-	def wrapper(task_id,*args):
-		progress_recorder = ProgressRecorder(task_id)
-		progress_recorder_descr = 'medialib-job-folder-scan-progress-media_files'
+	def wrapper(prodr_mess = 'medialib-job-folder-scan-progress-media_files',*args):
+		self.progress_recorder = ProgressRecorder(task_id)
+		progress_recorder_descr = prodr_mess
 		result = function(*args)
 		# After function call
 		# ...
@@ -66,75 +62,69 @@ class JobInternalStateRedisKeeper:
 			return val
 		return wrapper
 
-	
-
-#from medialib.myMediaLib_fs_util import find_new_music_folder
 from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
-#from fpgenerator.celerytools.tools import redis_state_notifier
+
+class Media_FileSystem_Helper_Progress(mfsh):
+	def __init__(self, descr = 'medialib-job', *args):
+		progress_recorder = ProgressRecorder(self)
+		self.progress_recorder_descr = descr
+		self._EXT_CALL_FREQ = 10
+		
+	def iterrration_extention_point(self, *args):
+		""" iterrration_extention_point designed for redefine in a child class"""
+		if self._current_iteration%self._EXT_CALL_FREQ == 0:
+			progress_recorder.set_progress(self._current_iteration, i+self._current_iteration, description=progress_recorder_descr)	
+
+
 find_new_music_folder = celery_progress_indicator(mfsh().find_new_music_folder)
-
-
-
-
-#from worker import app
-
-
-
-
-
-
-#cfg_fp = ConfigParser()
-#cfg_fp.read(medialib_fp_cfg)
 
 logger = logging.getLogger('controller_logger.scheduler')
 
-#musicbrainzngs.set_useragent("python-discid-example", "0.1", "your@mail")
 
-#redis_connection = Redis(host=cfg_fp['REDIS']['host'], port=cfg_fp['REDIS']['port'], db=0)
 
-import celery_progress
+		
+class CeleryScheduler:
+	def music_folders_generation_scheduler(self, folder_node_path, prev_fpDL, prev_music_folderL,*args):	
+		# Генерация линейного списка папок с аудио данным с учетом вложенных папок
+		# Промежуточные статусы писать в Redis!!!!
+		
+		
+		if not os.path.exists(folder_node_path):
+			print('---!Album path Error:%s - not exists'%folder_node_path)
+			return 
+		cnt=1	
+		fpDL = []
+		music_folderL = []
+		use_prev_res = False
+		prev_fpDL_used = False
+		dump_path = ''
 
-def music_folders_generation_scheduler(task_id, folder_node_path, prev_fpDL, prev_music_folderL,*args):	
-	# Генерация линейного списка папок с аудио данным с учетом вложенных папок
-	# Промежуточные статусы писать в Redis!!!!
-	
-	
-	if not os.path.exists(folder_node_path):
-		print('---!Album path Error:%s - not exists'%folder_node_path)
-		return 
-	cnt=1	
-	fpDL = []
-	music_folderL = []
-	use_prev_res = False
-	prev_fpDL_used = False
-	dump_path = ''
+		if prev_music_folderL:
+			if len(prev_music_folderL)>0:
+				music_folderL = prev_music_folderL
+				print("Media Folders structure is taken from prev music_folderL with len:",len(music_folderL))
+		else:	
+			dirL =find_new_music_folder(self,[folder_node_path],[],[],'initial')
+			music_folderL = list(map(lambda x: bytes(x+'/',BASE_ENCODING),dirL['music_folderL']))
+			print("Media folders structure build with initial folders:",len(music_folderL))
+		
+		tmp_music_folderL = music_folderL
+		
+		if prev_fpDL:
+			if len(prev_fpDL) > 0:
+				
+				fpDL = prev_fpDL
+				cnt = len(music_folderL) - len(tmp_music_folderL) + 1
+				prev_fpDL_used = True
+				print("Media Folders structure is recalculated from prev music_folderL with len:",len(tmp_music_folderL))
 
-	if prev_music_folderL:
-		if len(prev_music_folderL)>0:
-			music_folderL = prev_music_folderL
-			print("Media Folders structure is taken from prev music_folderL with len:",len(music_folderL))
-	else:	
-		dirL =find_new_music_folder(task_id,[folder_node_path],[],[],'initial')
-		music_folderL = list(map(lambda x: bytes(x+'/',BASE_ENCODING),dirL['music_folderL']))
-		print("Media folders structure build with initial folders:",len(music_folderL))
-	
-	tmp_music_folderL = music_folderL
-	
-	if prev_fpDL:
-		if len(prev_fpDL) > 0:
-			
-			fpDL = prev_fpDL
-			cnt = len(music_folderL) - len(tmp_music_folderL) + 1
-			prev_fpDL_used = True
-			print("Media Folders structure is recalculated from prev music_folderL with len:",len(tmp_music_folderL))
+			if fpDL == []:		
+				print('Error with last result folder. Not found in current folders structures')
+				return{'music_folderL':music_folderL,'last_folder':last_folder}
+				
+		print(tmp_music_folderL,len(tmp_music_folderL))
+		return tmp_music_folderL
 
-		if fpDL == []:		
-			print('Error with last result folder. Not found in current folders structures')
-			return{'music_folderL':music_folderL,'last_folder':last_folder}
-			
-	print(tmp_music_folderL,len(tmp_music_folderL))
-	return tmp_music_folderL
-	#job_folders_collect = q.enqueue('myMediaLib_tools.find_new_music_folder', [folder_node_path],[],[],'initial')
 
 def get_fp_overall_progress(root_task):
 	
