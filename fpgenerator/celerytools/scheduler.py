@@ -66,6 +66,7 @@ from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
 
 class Media_FileSystem_Helper_Progress(mfsh):
 	def __init__(self, descr = 'medialib-job', *args):
+		super().__init__()
 		progress_recorder = ProgressRecorder(self)
 		self.progress_recorder_descr = descr
 		self._EXT_CALL_FREQ = 10
