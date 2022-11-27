@@ -49,7 +49,7 @@ class Media_FileSystem_Helper_Progress(mfsh):
 		print('args:',args)
 		self.progress_recorder = ProgressRecorder(self)
 		self.progress_recorder.set_progress(0, 1, description='medialib-job')
-		print(self.progress_recorder)
+		print('progress_recorder:',self.progress_recorder,dir(self.progress_recorder))
 		super().find_new_music_folder(*args)
 		
 	def iterrration_extention_point(self, *args):
