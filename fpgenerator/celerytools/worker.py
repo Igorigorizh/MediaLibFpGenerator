@@ -45,6 +45,7 @@ class Media_FileSystem_Helper_Progress(mfsh):
 		self._EXT_CALL_FREQ = 10
 	
 	#@app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
+	@classmethod
 	def find_new_music_folder(self,*args):
 		print('args:',args)
 		self.progress_recorder = ProgressRecorder(self)
