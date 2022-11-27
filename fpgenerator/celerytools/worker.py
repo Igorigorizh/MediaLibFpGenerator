@@ -35,32 +35,57 @@ def hello():
 	print("Hello there")
 	return True
 descr = 'medialib-job-folder-scan-progress-media_files'	
+
+class ProgressTask(Task):
+    self._progress = None
+    @property
+    def progress(self):
+        if self._progress is None:
+            self._progress = ProgressRecorder(self)
+        return self.self._progress
+		
 from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
 
 class Media_FileSystem_Helper_Progress(mfsh):
-	def __init__(self, descr = 'medialib-job', *args):
+	def __init__(self):
 		super().__init__()
 		print(">>>>>>>>>> here construct --------------")
-		self.progress_recorder = ProgressRecorder(self)
-		self.progress_recorder_descr = descr
+		self.progress_recorder = None
+		self.progress_recorder_descr = ""
 		self._EXT_CALL_FREQ = 10
 	
 	#@app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
-	@classmethod
+	#@classmethod
+	def set_progress_recorder(self,progress_recorder, descr)
+		self.progress_recorder = None
+		self.progress_recorder_descr = descr
+		
 	def find_new_music_folder(self,*args):
 		print('args:',args)
 		#self.progress_recorder = ProgressRecorder(self)
-		self.progress_recorder.set_progress(0, 1, description='medialib-job')
 		print('progress_recorder:',self.progress_recorder,dir(self.progress_recorder))
-		super().find_new_music_folder(*args)
+		if self.progress_recorder:
+			self.progress_recorder.set_progress(2, 10, description='medialib-job')
+			super().find_new_music_folder(*args)
 		
 	def iterrration_extention_point(self, *args):
 		""" iterrration_extention_point redefine with celery progress_recorder"""
+		print('in iterrator:',self.progress_recorder)
 		if self._current_iteration%self._EXT_CALL_FREQ == 0 and self.progress_recorder:
 			print(self.progress_recorder,id(self.progress_recorder))
 			self.progress_recorder.set_progress(self._current_iteration, self._current_iteration+1, description=self.progress_recorder_descr)	
 
-find_new_music_folder = app.task(base=Media_FileSystem_Helper_Progress, name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)(Media_FileSystem_Helper_Progress.find_new_music_folder)
+@app.task(base=ProgressTask, name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
+def find_new_music_folder_task(self, *args):
+	mfsh_obj = Media_FileSystem_Helper_Progress()
+	
+	mfsh_obj.progress_recorder = self.progress()
+	mfsh_obj.progress_recorder.set_progress(0, 1, description='medialib-job')
+	
+	mfsh_obj.set_progress_recorder(self.progress(),"medialib-job-folder-scan-progress-media_files")
+	mfsh_obj.find_new_music_folder(*args)
+
+#find_new_music_folder = app.task(base=Progress, name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)(Media_FileSystem_Helper_Progress.find_new_music_folder)
 
 
 @app.task(name="worker.callback_acoustID_request")
