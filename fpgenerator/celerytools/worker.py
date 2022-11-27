@@ -57,26 +57,26 @@ class Media_FileSystem_Helper_Progress(mfsh):
 		self.progress_recorder = None
 		self.progress_recorder_descr = ""
 		self._EXT_CALL_FREQ = 10
-	
-	#@app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
-	#@classmethod
+
 	def set_progress_recorder(self,progress_recorder, descr):
 		self.progress_recorder = progress_recorder
 		self.progress_recorder_descr = descr
 		
 	def find_new_music_folder(self,*args):
+		resL = []
 		print('in find_new_music_folder helper progress  args:',args)
 		#self.progress_recorder = ProgressRecorder(self)
 		print('progress_recorder:',self.progress_recorder,dir(self.progress_recorder))
 		if self.progress_recorder:
 			self.progress_recorder.set_progress(2, 10, description='medialib-job')
-			super().find_new_music_folder(*args)
+			resL = super().find_new_music_folder(*args)
+		return resL
 		
 	def iterrration_extention_point(self, *args):
 		""" iterrration_extention_point redefine with celery progress_recorder"""
-		print('in iterrator:',self.progress_recorder)
+		#print('in iterrator:',self.progress_recorder)
 		if self._current_iteration%self._EXT_CALL_FREQ == 0 and self.progress_recorder:
-			print(self.progress_recorder,id(self.progress_recorder))
+			print('in iterrator:',self.progress_recorder,id(self.progress_recorder),self._current_iteration)
 			self.progress_recorder.set_progress(self._current_iteration, self._current_iteration+1, description=self.progress_recorder_descr)	
 
 @app.task(base=ProgressTask, name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
