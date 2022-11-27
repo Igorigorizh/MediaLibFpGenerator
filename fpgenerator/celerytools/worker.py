@@ -44,7 +44,7 @@ class Media_FileSystem_Helper_Progress(mfsh):
 		self.progress_recorder_descr = descr
 		self._EXT_CALL_FREQ = 10
 	
-	@app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
+	#@app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
 	def find_new_music_folder(self,*args):
 		print(args,flush=True)
 		self.progress_recorder = ProgressRecorder(self)
@@ -56,7 +56,7 @@ class Media_FileSystem_Helper_Progress(mfsh):
 			print(self.progress_recorder,id(self.progress_recorder))
 			self.progress_recorder.set_progress(self._current_iteration, self._current_iteration+1, description=self.progress_recorder_descr)	
 
-#find_new_music_folder = app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)(Media_FileSystem_Helper_Progress.find_new_music_folder)
+find_new_music_folder = app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)(Media_FileSystem_Helper_Progress.find_new_music_folder)
 
 
 @app.task(name="worker.callback_acoustID_request")
