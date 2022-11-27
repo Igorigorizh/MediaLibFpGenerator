@@ -61,11 +61,11 @@ class Media_FileSystem_Helper_Progress(mfsh):
 	#@app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
 	#@classmethod
 	def set_progress_recorder(self,progress_recorder, descr):
-		self.progress_recorder = None
+		self.progress_recorder = progress_recorder
 		self.progress_recorder_descr = descr
 		
 	def find_new_music_folder(self,*args):
-		print('args:',args)
+		print('in find_new_music_folder helper progress  args:',args)
 		#self.progress_recorder = ProgressRecorder(self)
 		print('progress_recorder:',self.progress_recorder,dir(self.progress_recorder))
 		if self.progress_recorder:
@@ -83,9 +83,11 @@ class Media_FileSystem_Helper_Progress(mfsh):
 def find_new_music_folder_task(self, *args):
 	mfsh_obj = Media_FileSystem_Helper_Progress()
 	
+	print('duumy check with:',self.progress)
 	mfsh_obj.progress_recorder = self.progress
 	mfsh_obj.progress_recorder.set_progress(0, 1, description='medialib-job')
 	
+	print('Do setter cwith:',mfsh_obj.progress_recorder)
 	mfsh_obj.set_progress_recorder(self.progress,"medialib-job-folder-scan-progress-media_files")
 	mfsh_obj.find_new_music_folder(*args)
 
