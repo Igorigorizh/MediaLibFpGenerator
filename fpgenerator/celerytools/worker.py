@@ -37,7 +37,7 @@ def hello():
 descr = 'medialib-job-folder-scan-progress-media_files'	
 
 class ProgressTask(Task):
-    self._progress = None
+    _progress = None
     @property
     def progress(self):
         if self._progress is None:
