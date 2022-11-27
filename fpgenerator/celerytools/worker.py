@@ -48,6 +48,7 @@ class Media_FileSystem_Helper_Progress(mfsh):
 	def find_new_music_folder(self,*args):
 		print('args:',args)
 		self.progress_recorder = ProgressRecorder(self)
+		self.progress_recorder.set_progress(0, 1, description=self.progress_recorder_descr)
 		print(self.progress_recorder)
 		super().find_new_music_folder(*args)
 		
