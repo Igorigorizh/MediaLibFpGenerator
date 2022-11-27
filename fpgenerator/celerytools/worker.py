@@ -6,6 +6,7 @@ import acoustid
 
 from celery import Celery
 from celery import group
+from celery import Task
 from celery_progress.backend import ProgressRecorder
 import sys
 print('\n',"in worker: sys_path:",sys.path)
@@ -40,7 +41,7 @@ class Media_FileSystem_Helper_Progress(mfsh):
 	def __init__(self, descr = 'medialib-job', *args):
 		super().__init__()
 		print(">>>>>>>>>> here construct --------------")
-		self.progress_recorder = None
+		self.progress_recorder = ProgressRecorder(self)
 		self.progress_recorder_descr = descr
 		self._EXT_CALL_FREQ = 10
 	
@@ -48,7 +49,7 @@ class Media_FileSystem_Helper_Progress(mfsh):
 	@classmethod
 	def find_new_music_folder(self,*args):
 		print('args:',args)
-		self.progress_recorder = ProgressRecorder(self)
+		#self.progress_recorder = ProgressRecorder(self)
 		self.progress_recorder.set_progress(0, 1, description='medialib-job')
 		print('progress_recorder:',self.progress_recorder,dir(self.progress_recorder))
 		super().find_new_music_folder(*args)
@@ -59,7 +60,7 @@ class Media_FileSystem_Helper_Progress(mfsh):
 			print(self.progress_recorder,id(self.progress_recorder))
 			self.progress_recorder.set_progress(self._current_iteration, self._current_iteration+1, description=self.progress_recorder_descr)	
 
-find_new_music_folder = app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)(Media_FileSystem_Helper_Progress.find_new_music_folder)
+find_new_music_folder = app.task(base=Media_FileSystem_Helper_Progress, name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)(Media_FileSystem_Helper_Progress.find_new_music_folder)
 
 
 @app.task(name="worker.callback_acoustID_request")
