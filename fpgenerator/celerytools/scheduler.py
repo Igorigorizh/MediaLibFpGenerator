@@ -41,49 +41,29 @@ def celery_progress_indicator(function):
 	return wrapper
 	
 
-class JobInternalStateRedisKeeper:
-	# запоминаем аргументы декоратора
-	#@JobInternalStateRedisKeeper(state_name='medialib-job-fp-albums-total-progress',action='progress')		
-	def __init__(self, state_name='medialib:', action='init'):
-		progress_recorder = ProgressRecorder(self)
-		progress_recorder_descr = 'medialib-job-folder-scan-progress-first-run'
-		self._state_name = state_name
-		self._action = action
+# class JobInternalStateRedisKeeper:
+	# # запоминаем аргументы декоратора
+	# #@JobInternalStateRedisKeeper(state_name='medialib-job-fp-albums-total-progress',action='progress')		
+	# def __init__(self, state_name='medialib:', action='init'):
+		# progress_recorder = ProgressRecorder(self)
+		# progress_recorder_descr = 'medialib-job-folder-scan-progress-first-run'
+		# self._state_name = state_name
+		# self._action = action
 	
 
-	# декоратор общего назначения
-	def __call__(self, func):
-		@wraps(func)
-		def wrapper(*args, **kwargs):
+	# # декоратор общего назначения
+	# def __call__(self, func):
+		# @wraps(func)
+		# def wrapper(*args, **kwargs):
             
-			val = func(*args, **kwargs)
-			redis_state_notifier(self._state_name, self._action)
+			# val = func(*args, **kwargs)
+			# redis_state_notifier(self._state_name, self._action)
 			
-			return val
-		return wrapper
-
-from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
-
-class Media_FileSystem_Helper_Progress(mfsh):
-	def __init__(self, descr = 'medialib-job', *args):
-		super().__init__()
-		self.progress_recorder = None
-		self.progress_recorder_descr = descr
-		self._EXT_CALL_FREQ = 10
-	
-	def find_new_music_folder(self,*args):
-		print(args,flush=True)
-		self.progress_recorder = ProgressRecorder(self)
-		super().find_new_music_folder(*args)
-		
-	def iterrration_extention_point(self, *args):
-		""" iterrration_extention_point redefine with celery progress_recorder"""
-		if self._current_iteration%self._EXT_CALL_FREQ == 0 and self.progress_recorder:
-			print(self.progress_recorder,id(self.progress_recorder))
-			self.progress_recorder.set_progress(self._current_iteration, self._current_iteration+1, description=self.progress_recorder_descr)	
+			# return val
+		# return wrapper
 
 
-find_new_music_folder = celery_progress_indicator(mfsh().find_new_music_folder)
+
 
 logger = logging.getLogger('controller_logger.scheduler')
 
