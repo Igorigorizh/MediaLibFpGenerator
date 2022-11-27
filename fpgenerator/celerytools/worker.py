@@ -42,7 +42,7 @@ class ProgressTask(Task):
     def progress(self):
         if self._progress is None:
             self._progress = ProgressRecorder(self)
-        return self.self._progress
+        return self._progress
 		
 from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
 
