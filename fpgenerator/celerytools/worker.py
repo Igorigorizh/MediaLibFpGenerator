@@ -46,8 +46,9 @@ class Media_FileSystem_Helper_Progress(mfsh):
 	
 	#@app.task(name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
 	def find_new_music_folder(self,*args):
-		print(args,flush=True)
+		print('args:',args)
 		self.progress_recorder = ProgressRecorder(self)
+		print(self.progress_recorder)
 		super().find_new_music_folder(*args)
 		
 	def iterrration_extention_point(self, *args):
