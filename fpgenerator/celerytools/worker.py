@@ -11,6 +11,8 @@ from celery_progress.backend import ProgressRecorder
 import sys
 print('\n',"in worker: sys_path:",sys.path)
 
+from . import BASE_ENCODING
+
 from celerytools.scheduler import CeleryScheduler 
 #from celerytools.scheduler import Media_FileSystem_Helper_Progress as mfsh_progress
 from celerytools.tools import get_FP_and_discID_for_album
@@ -34,18 +36,13 @@ def hello():
 	time.sleep(10)
 	print("Hello there")
 	return True
-descr = 'medialib-job-folder-scan-progress-media_files'	
 
 class ProgressTask(Task):
 	_progress = None
 	@property
 	def progress(self):
-		#if self._progress is None:
-		print('in ProgressTask:progress before init')
+		print('in ProgressTask:progress:',self._progress)
 		self._progress = ProgressRecorder(self)
-		print('in ProgressTask:progress after init',self._progress)
-		#else:
-		#	print('in ProgressTask:progress init strange bevaiour')
 		return self._progress
 		
 from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
@@ -53,7 +50,6 @@ from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
 class Media_FileSystem_Helper_Progress(mfsh):
 	def __init__(self):
 		super().__init__()
-		print(">>>>>>>>>> here construct --------------")
 		self.progress_recorder = None
 		self.progress_recorder_descr = ""
 		self._EXT_CALL_FREQ = 10
@@ -65,26 +61,28 @@ class Media_FileSystem_Helper_Progress(mfsh):
 	def find_new_music_folder(self,*args):
 		res = None
 		print('in find_new_music_folder helper progress  args:',args)
-		#self.progress_recorder = ProgressRecorder(self)
-		print('progress_recorder:',self.progress_recorder,dir(self.progress_recorder))
 		if self.progress_recorder:
 			self.progress_recorder.set_progress(2, 10, description=self.progress_recorder_descr)
-			res = super().find_new_music_folder(*args)
+			resD = super().find_new_music_folder(*args)
+			if 'music_folderL' in resD:
+				res = list(map(lambda x: bytes(x+'/',BASE_ENCODING),resD['music_folderL']))
+			#if 'music_folderL' in resD:
+			#	res = resD['music_folderL']
 		return res
 		
 	def iterrration_extention_point(self, *args):
 		""" iterrration_extention_point redefine with celery progress_recorder"""
-		#print('in iterrator:',self.progress_recorder)
 		if self._current_iteration%self._EXT_CALL_FREQ == 0 and self.progress_recorder:
-			print('in iterrator:',self.progress_recorder,id(self.progress_recorder),self._current_iteration)
+			#print('in iterrator:',self.progress_recorder,id(self.progress_recorder),self._current_iteration)
 			self.progress_recorder.set_progress(self._current_iteration, self._current_iteration+1, description=self.progress_recorder_descr)	
 
 @app.task(base=ProgressTask, name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
 def find_new_music_folder_task(self, *args):
+	# get instance of Media_FileSystem_Helper_Progress
 	mfsh_obj = Media_FileSystem_Helper_Progress()
-
-	print('Do setter cwith:',mfsh_obj.progress_recorder)
+	# set progress recorder with ProgressTask.progress -> self.progress
 	mfsh_obj.set_progress_recorder(self.progress,"medialib-job-folder-scan-progress-media_files")
+	# 
 	return mfsh_obj.find_new_music_folder(*args)
 
 
@@ -147,10 +145,11 @@ def main():
 	p5 = '/home/fpgenerator/MediaLibFpGenerator/music/MUSIC/ORIGINAL_MUSIC/ORIGINAL_ROCK/Pink Floyd/_HI_RES/1975 - Wish You Were Here (SACD-R)'
 	p2 = '/home/fpgenerator/MediaLibFpGenerator/music/MUSIC/ORIGINAL_MUSIC/ORIGINAL_CLASSICAL/Vivaldi/Antonio Vivaldi - 19 Sinfonias and Concertos for Strings and Continuo/'
 	p6 = '/home/fpgenerator/MediaLibFpGenerator/music/MUSIC/ORIGINAL_MUSIC/ORIGINAL_ROCK/Pink Floyd/Pink Floyd - Dark Side Of The Moon (1973) [MFSL UDCD II 517]/'
-	#task_first_res = app.send_task('music_folders_generation_scheduler-new_recogn_name',(p2,[],[]),link=callback_FP_gen.s())
+	task_first_res = app.send_task('find_new_music_folder-new_recogn_name',(p3,[],[]),link=callback_FP_gen.s())
 	path = '/home/fpgenerator/MediaLibFpGenerator/music/MUSIC/ORIGINAL_MUSIC'
-	task_first_res = app.send_task('find_new_music_folder-new_recogn_name',([path],[],[],'initial'))
-	#task_folders_list = app.send_task('find_new_music_folder-new_recogn_name',([path],[],[],'initial'),link=callback_find_new_music_folder.s())
+	path2 = '/home/fpgenerator/MediaLibFpGenerator/music/MUSIC/MP3_COLLECTION'
+	#task_first_res = app.send_task('find_new_music_folder-new_recogn_name',([path,path2],[],[],'initial'))
+	
 	print(task_first_res,type(task_first_res))
 	
 

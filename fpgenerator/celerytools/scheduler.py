@@ -21,53 +21,16 @@ import time
 import logging
 from pathlib import Path
 
-from celerytools import BASE_ENCODING
+from . import BASE_ENCODING
 
 
 import warnings
 
+from celery import Celery
+
 from functools import wraps
 
-
-def celery_progress_indicator(function):
-	@functools.wraps(function)
-	def wrapper(prodr_mess = 'medialib-job-folder-scan-progress-media_files',*args):
-		self.progress_recorder = ProgressRecorder(self)
-		progress_recorder_descr = prodr_mess
-		result = function(*args)
-		# After function call
-		# ...
-		return result
-	return wrapper
-	
-
-# class JobInternalStateRedisKeeper:
-	# # запоминаем аргументы декоратора
-	# #@JobInternalStateRedisKeeper(state_name='medialib-job-fp-albums-total-progress',action='progress')		
-	# def __init__(self, state_name='medialib:', action='init'):
-		# progress_recorder = ProgressRecorder(self)
-		# progress_recorder_descr = 'medialib-job-folder-scan-progress-first-run'
-		# self._state_name = state_name
-		# self._action = action
-	
-
-	# # декоратор общего назначения
-	# def __call__(self, func):
-		# @wraps(func)
-		# def wrapper(*args, **kwargs):
-            
-			# val = func(*args, **kwargs)
-			# redis_state_notifier(self._state_name, self._action)
-			
-			# return val
-		# return wrapper
-
-
-
-
 logger = logging.getLogger('controller_logger.scheduler')
-
-
 
 		
 class CeleryScheduler:
@@ -187,4 +150,12 @@ def check_job_status_via_result(result):
 			print()	
 			print('Progress:', get_fp_overall_progress(result.children[0]))
 
+def get_async_res_via_id(res_id_str):
+	app.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://192.168.1.65:6379")
+	app.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://192.168.1.65:6379")
+	app.conf.imports = 'fpgenerator'
+	app.conf.task_serializer = 'pickle'
+	app.conf.result_serializer = 'pickle'
+	app.conf.accept_content = ['application/json', 'application/x-python-serialize']
+	return AsyncResult(res_id_str,app=app)
 	
