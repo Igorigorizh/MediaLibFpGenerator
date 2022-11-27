@@ -82,7 +82,7 @@ def find_new_music_folder_task(self, *args):
 	mfsh_obj.progress_recorder = self.progress
 	mfsh_obj.progress_recorder.set_progress(0, 1, description='medialib-job')
 	
-	mfsh_obj.set_progress_recorder(self.progress(),"medialib-job-folder-scan-progress-media_files")
+	mfsh_obj.set_progress_recorder(self.progress,"medialib-job-folder-scan-progress-media_files")
 	mfsh_obj.find_new_music_folder(*args)
 
 #find_new_music_folder = app.task(base=Progress, name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)(Media_FileSystem_Helper_Progress.find_new_music_folder)
