@@ -40,12 +40,12 @@ class ProgressTask(Task):
 	_progress = None
 	@property
 	def progress(self):
-		if self._progress is None:
-			print('in ProgressTask:progress before init')
-			self._progress = ProgressRecorder(self)
-			print('in ProgressTask:progress after init',self._progress)
-		else:
-			print('in ProgressTask:progress init strange bevaiour')
+		#if self._progress is None:
+		print('in ProgressTask:progress before init')
+		self._progress = ProgressRecorder(self)
+		print('in ProgressTask:progress after init',self._progress)
+		#else:
+		#	print('in ProgressTask:progress init strange bevaiour')
 		return self._progress
 		
 from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
