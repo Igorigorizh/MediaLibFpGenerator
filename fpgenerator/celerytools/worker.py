@@ -79,7 +79,7 @@ class Media_FileSystem_Helper_Progress(mfsh):
 def find_new_music_folder_task(self, *args):
 	mfsh_obj = Media_FileSystem_Helper_Progress()
 	
-	mfsh_obj.progress_recorder = self.progress()
+	mfsh_obj.progress_recorder = self.progress
 	mfsh_obj.progress_recorder.set_progress(0, 1, description='medialib-job')
 	
 	mfsh_obj.set_progress_recorder(self.progress(),"medialib-job-folder-scan-progress-media_files")
