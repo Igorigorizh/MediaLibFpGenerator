@@ -18,9 +18,9 @@ from . import BASE_ENCODING
 #from celerytools.tools import acoustID_lookup_celery_wrapper
 #from celerytools.tools import MB_get_releases_by_discid_celery_wrapper
 
-from medialib.myMediaLib_tools import get_FP_and_discID_for_album
-from medialib.myMediaLib_tools import acoustID_lookup_celery_wrapper
-from medialib.myMediaLib_tools import MB_get_releases_by_discid_celery_wrapper
+from medialib.myMediaLib_fp_tools import get_FP_and_discID_for_album
+from medialib.myMediaLib_fp_tools import acoustID_lookup_celery_wrapper
+from medialib.myMediaLib_fp_tools import MB_get_releases_by_discid_celery_wrapper
 
 
 from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
