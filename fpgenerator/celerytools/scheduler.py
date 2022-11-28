@@ -11,24 +11,19 @@ import re
 import subprocess
 import asyncio
 import functools
-
+from functools import wraps
 import configparser
+from pathlib import Path
 
 from redis import Redis
+from celery import Celery
 from celery_progress.backend import ProgressRecorder
 import celery_progress
 import time
 import logging
-from pathlib import Path
+
 
 from . import BASE_ENCODING
-
-
-import warnings
-
-from celery import Celery
-
-from functools import wraps
 
 logger = logging.getLogger('controller_logger.scheduler')
 

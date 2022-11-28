@@ -28,4 +28,5 @@ sqlalchemy
 pytest==7.1.2
 pytest-cov
 pyyaml
+pydantic
 alembic==1.8.1
