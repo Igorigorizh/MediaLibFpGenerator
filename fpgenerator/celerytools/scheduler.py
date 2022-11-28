@@ -33,47 +33,47 @@ from functools import wraps
 logger = logging.getLogger('controller_logger.scheduler')
 
 		
-class CeleryScheduler:
-	def music_folders_generation_scheduler(self, folder_node_path, prev_fpDL, prev_music_folderL,*args):	
-		# Генерация линейного списка папок с аудио данным с учетом вложенных папок
-		# Промежуточные статусы писать в Redis!!!!
+# class CeleryScheduler:
+	# def music_folders_generation_scheduler(self, folder_node_path, prev_fpDL, prev_music_folderL,*args):	
+		# # Генерация линейного списка папок с аудио данным с учетом вложенных папок
+		# # Промежуточные статусы писать в Redis!!!!
 		
 		
-		if not os.path.exists(folder_node_path):
-			print('---!Album path Error:%s - not exists'%folder_node_path)
-			return 
-		cnt=1	
-		fpDL = []
-		music_folderL = []
-		use_prev_res = False
-		prev_fpDL_used = False
-		dump_path = ''
+		# if not os.path.exists(folder_node_path):
+			# print('---!Album path Error:%s - not exists'%folder_node_path)
+			# return 
+		# cnt=1	
+		# fpDL = []
+		# music_folderL = []
+		# use_prev_res = False
+		# prev_fpDL_used = False
+		# dump_path = ''
 
-		if prev_music_folderL:
-			if len(prev_music_folderL)>0:
-				music_folderL = prev_music_folderL
-				print("Media Folders structure is taken from prev music_folderL with len:",len(music_folderL))
-		else:	
-			dirL =find_new_music_folder(self,[folder_node_path],[],[],'initial')
-			music_folderL = list(map(lambda x: bytes(x+'/',BASE_ENCODING),dirL['music_folderL']))
-			print("Media folders structure build with initial folders:",len(music_folderL))
+		# if prev_music_folderL:
+			# if len(prev_music_folderL)>0:
+				# music_folderL = prev_music_folderL
+				# print("Media Folders structure is taken from prev music_folderL with len:",len(music_folderL))
+		# else:	
+			# dirL =find_new_music_folder(self,[folder_node_path],[],[],'initial')
+			# music_folderL = list(map(lambda x: bytes(x+'/',BASE_ENCODING),dirL['music_folderL']))
+			# print("Media folders structure build with initial folders:",len(music_folderL))
 		
-		tmp_music_folderL = music_folderL
+		# tmp_music_folderL = music_folderL
 		
-		if prev_fpDL:
-			if len(prev_fpDL) > 0:
+		# if prev_fpDL:
+			# if len(prev_fpDL) > 0:
 				
-				fpDL = prev_fpDL
-				cnt = len(music_folderL) - len(tmp_music_folderL) + 1
-				prev_fpDL_used = True
-				print("Media Folders structure is recalculated from prev music_folderL with len:",len(tmp_music_folderL))
+				# fpDL = prev_fpDL
+				# cnt = len(music_folderL) - len(tmp_music_folderL) + 1
+				# prev_fpDL_used = True
+				# print("Media Folders structure is recalculated from prev music_folderL with len:",len(tmp_music_folderL))
 
-			if fpDL == []:		
-				print('Error with last result folder. Not found in current folders structures')
-				return{'music_folderL':music_folderL,'last_folder':last_folder}
+			# if fpDL == []:		
+				# print('Error with last result folder. Not found in current folders structures')
+				# return{'music_folderL':music_folderL,'last_folder':last_folder}
 				
-		print(tmp_music_folderL,len(tmp_music_folderL))
-		return tmp_music_folderL
+		# print(tmp_music_folderL,len(tmp_music_folderL))
+		# return tmp_music_folderL
 
 
 def get_fp_overall_progress(root_task):

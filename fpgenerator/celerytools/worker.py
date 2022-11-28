@@ -13,11 +13,14 @@ print('\n',"in worker: sys_path:",sys.path)
 
 from . import BASE_ENCODING
 
-from celerytools.scheduler import CeleryScheduler 
-#from celerytools.scheduler import Media_FileSystem_Helper_Progress as mfsh_progress
-from celerytools.tools import get_FP_and_discID_for_album
-from celerytools.tools import acoustID_lookup_celery_wrapper
-from celerytools.tools import MB_get_releases_by_discid_celery_wrapper
+
+#from celerytools.tools import get_FP_and_discID_for_album
+#from celerytools.tools import acoustID_lookup_celery_wrapper
+#from celerytools.tools import MB_get_releases_by_discid_celery_wrapper
+
+from medialib.myMediaLib_fp_tools import get_FP_and_discID_for_album
+from medialib.myMediaLib_fp_tools import acoustID_lookup_celery_wrapper
+from medialib.myMediaLib_fp_tools import MB_get_releases_by_discid_celery_wrapper
 
 
 from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
@@ -31,11 +34,6 @@ app.conf.task_serializer = 'pickle'
 app.conf.result_serializer = 'pickle'
 app.conf.accept_content = ['application/json', 'application/x-python-serialize']
 
-@app.task(name="hello")
-def hello():
-	time.sleep(10)
-	print("Hello there")
-	return True
 
 class ProgressTask(Task):
 	_progress = None
@@ -45,7 +43,7 @@ class ProgressTask(Task):
 		self._progress = ProgressRecorder(self)
 		return self._progress
 		
-from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
+
 
 class Media_FileSystem_Helper_Progress(mfsh):
 	def __init__(self):
@@ -62,12 +60,11 @@ class Media_FileSystem_Helper_Progress(mfsh):
 		res = None
 		print('in find_new_music_folder helper progress  args:',args)
 		if self.progress_recorder:
-			self.progress_recorder.set_progress(2, 10, description=self.progress_recorder_descr)
+			self.progress_recorder.set_progress(1, 2, description=self.progress_recorder_descr)
 			resD = super().find_new_music_folder(*args)
 			if 'music_folderL' in resD:
 				res = list(map(lambda x: bytes(x+'/',BASE_ENCODING),resD['music_folderL']))
-			#if 'music_folderL' in resD:
-			#	res = resD['music_folderL']
+
 		return res
 		
 	def iterrration_extention_point(self, *args):
@@ -82,7 +79,7 @@ def find_new_music_folder_task(self, *args):
 	mfsh_obj = Media_FileSystem_Helper_Progress()
 	# set progress recorder with ProgressTask.progress -> self.progress
 	mfsh_obj.set_progress_recorder(self.progress,"medialib-job-folder-scan-progress-media_files")
-	# 
+	# call redefined method
 	return mfsh_obj.find_new_music_folder(*args)
 
 
@@ -115,17 +112,21 @@ def callback_MB_get_releases_by_discid_request(result):
 	return response	
 
 @app.task(name="worker.callback_FP_gen")
-def callback_FP_gen(result):
-	# Тут также позже подключить прогресс ддля отслеживание всего прогресса поальбомно
+def callback_FP_gen(self, result):
+	# Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задача.\
+	# Ниже только формируется план
+	# scheduler.get_fp_overall_progress(root_task=res.children[0]), где res = get_async_res_via_id('592027a3-2d10-4f27-934e-fc2f6b67dc1e')
 	folderL = result
-	#applicable  only for cue image scenario
-	for folder_name in folderL:
-		task_fp_res = app.send_task('get_FP_and_discID_for_album',(folder_name, 0, 1, 'multy', 'FP'), link=fp_post_processing_req)
-
+	
+	if folder:
+		for folder_name in folderL:
+			task_fp_res = app.send_task('get_FP_and_discID_for_album',(folder_name, 0, 1, 'multy', 'FP'), link=fp_post_processing_req)
+	else:
+		print("Error in callback_FP_gen: None result")
 		
 		
-music_folders_generation_scheduler = app.task(name='music_folders_generation_scheduler-new_recogn_name',serializer='json',bind=True)\
-											(CeleryScheduler().music_folders_generation_scheduler)		
+#music_folders_generation_scheduler = app.task(name='music_folders_generation_scheduler-new_recogn_name',serializer='json',bind=True)\
+#											(CeleryScheduler().music_folders_generation_scheduler)		
 
 get_FP_and_discID_for_album = app.task(name='get_FP_and_discID_for_album',bind=True)(get_FP_and_discID_for_album)
 acoustID_lookup_celery_wrapper = app.task(name='acoustID_lookup_celery_wrapper',bind=True)(acoustID_lookup_celery_wrapper)
@@ -145,7 +146,7 @@ def main():
 	p5 = '/home/fpgenerator/MediaLibFpGenerator/music/MUSIC/ORIGINAL_MUSIC/ORIGINAL_ROCK/Pink Floyd/_HI_RES/1975 - Wish You Were Here (SACD-R)'
 	p2 = '/home/fpgenerator/MediaLibFpGenerator/music/MUSIC/ORIGINAL_MUSIC/ORIGINAL_CLASSICAL/Vivaldi/Antonio Vivaldi - 19 Sinfonias and Concertos for Strings and Continuo/'
 	p6 = '/home/fpgenerator/MediaLibFpGenerator/music/MUSIC/ORIGINAL_MUSIC/ORIGINAL_ROCK/Pink Floyd/Pink Floyd - Dark Side Of The Moon (1973) [MFSL UDCD II 517]/'
-	task_first_res = app.send_task('find_new_music_folder-new_recogn_name',(p3,[],[]),link=callback_FP_gen.s())
+	task_first_res = app.send_task('find_new_music_folder-new_recogn_name',([p3],[],[],'initial'),link=callback_FP_gen.s())
 	path = '/home/fpgenerator/MediaLibFpGenerator/music/MUSIC/ORIGINAL_MUSIC'
 	path2 = '/home/fpgenerator/MediaLibFpGenerator/music/MUSIC/MP3_COLLECTION'
 	#task_first_res = app.send_task('find_new_music_folder-new_recogn_name',([path,path2],[],[],'initial'))
