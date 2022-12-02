@@ -8,8 +8,7 @@ services:
     volumes:
       - redis_data:/data
     restart: always
-
-    
+   
   fpgenerator:
     build:
       context: .

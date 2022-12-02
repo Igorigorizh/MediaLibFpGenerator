@@ -28,10 +28,6 @@ from medialib.myMediaLib_cue import simple_parseCue
 from medialib.myMediaLib_cue import parseCue
 from medialib.myMediaLib_cue import GetTrackInfoVia_ext
 
-from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
-find_new_music_folder = mfsh().find_new_music_folder
-find_new_music_folder_simple = mfsh().find_new_music_folder_simple
-
 from celerytools import BASE_ENCODING
 from celerytools import mymedialib_cfg
 from celerytools import medialib_fp_cfg
@@ -44,7 +40,6 @@ import warnings
 from redis import Redis
 from celery_progress.backend import ProgressRecorder
 from configparser import ConfigParser
-
 
 
 cfg_fp = ConfigParser()
