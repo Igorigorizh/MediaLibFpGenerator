@@ -73,7 +73,7 @@ def find_new_music_folder_task(self, *args):
 	return mfsh_obj.find_new_music_folder(*args)
 
 
-@app.task(name="worker.callback_acoustID_request")
+@app.task(name="tasks.callback_acoustID_request")
 def callback_acoustID_request(result):
 	#acoustID.lookup(apikey, fingerprint, duration)
 	API_KEY = 'cSpUJKpD'
@@ -91,7 +91,7 @@ def callback_acoustID_request(result):
 	print('acoustId call - OK')	
 	return result['convDL']
 	
-@app.task(name="worker.callback_MB_get_releases_by_discid_request")
+@app.task(name="tasks.callback_MB_get_releases_by_discid_request")
 def callback_MB_get_releases_by_discid_request(result):
 	if 'discID' not in result:
 		return {'RC':-4}
@@ -101,7 +101,7 @@ def callback_MB_get_releases_by_discid_request(result):
 	print('MB call:',response)
 	return response	
 
-@app.task(name="worker.callback_FP_gen")
+@app.task(name="tasks.callback_FP_gen")
 def callback_FP_gen(result):
 	# Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задача.\
 	# Ниже только формируется план
