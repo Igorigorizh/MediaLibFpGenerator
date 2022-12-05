@@ -55,31 +55,31 @@ def get_task_info(task_id):
 	
 		
 def acoustID_lookup_celery_wrapper(self,*fp_args):
-	scoreL = fp_item = []
-	err_cnt = 0
+    scoreL = fp_item = []
+    err_cnt = 0
 	
-	print('fp:',fp_args)
-	API_KEY = 'cSpUJKpD'
-	meta = ["recordings","recordingids","releases","releaseids","releasegroups","releasegroupids", "tracks", "compress", "usermeta", "sources"]
-	response=acoustid.lookup(API_KEY, fp_args[1], fp_args[0],meta)
-	print(response)
-	
-	return {'response':response,'fname':fp_args[2]}
+    print('fp:',fp_args)
+    API_KEY = 'cSpUJKpD'
+    meta = ["recordings","recordingids","releases","releaseids","releasegroups","releasegroupids", "tracks", "compress", "usermeta", "sources"]
+    response=acoustid.lookup(API_KEY, fp_args[1], fp_args[0],meta)
+    print(response)
+
+    return {'response':response,'fname':fp_args[2]}
 
 def MB_get_releases_by_discid_celery_wrapper(self,*discID_arg):	
-	discID = discID_arg[0]
-	MB_discID_result = ''
-	try:
-		MB_discID_result = musicbrainzngs.get_releases_by_discid(discID,includes=["artists","recordings","release-groups"])
-	except Exception as e:
-		print(e)
-		return {'RC':-6,'error':str(e)}
+    discID = discID_arg[0]
+    MB_discID_result = ''
+    try:
+        MB_discID_result = musicbrainzngs.get_releases_by_discid(discID,includes=["artists","recordings","release-groups"])
+    except Exception as e:
+        print(e)
+        return {'RC':-6,'error':str(e)}
 		
-	if 'disc' not in MB_discID_result:	
-		return {'RC':-7,'error':'DiskID MB - NOT detected','MB_discID_result':MB_discID_result}
+    if 'disc' not in MB_discID_result:
+        return {'RC':-7,'error':'DiskID MB - NOT detected','MB_discID_result':MB_discID_result}
 	
 		
-	return {'RC':1,'MB_discID_result':MB_discID_result}
+    return {'RC':1,'MB_discID_result':MB_discID_result}
 	
 async def acoustID_lookup_wrapper(fp):
     API_KEY = 'cSpUJKpD'
@@ -92,5 +92,4 @@ async def acoustID_lookup_wrapper_parent(fp):
     return await acoustID_lookup_wrapper(fp)	
 
 			
-	
 	

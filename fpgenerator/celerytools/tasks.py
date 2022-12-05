@@ -1,15 +1,11 @@
 import os
-import time
-import functools
-import acoustid
-
 
 from celery import Celery
 from celery import group
 from celery import Task
 from celery_progress.backend import ProgressRecorder
 import sys
-print('\n',"in worker: sys_path:",sys.path)
+print('\n', "in worker: sys_path:", sys.path)
 
 from . import BASE_ENCODING
 
