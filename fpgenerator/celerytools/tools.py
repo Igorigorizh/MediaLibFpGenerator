@@ -1,32 +1,12 @@
 # -*- coding: utf-8 -*-
 import os
-from posixpath import join, dirname
-from os import scandir
-import pickle
-import acoustid
-import zlib
-import sqlite3
-import chardet
-import codecs
-import re
-import subprocess
-import asyncio
-from multiprocessing import Pool, cpu_count
-from itertools import tee
-import json
 
-import discid
-
-import musicbrainzngs
-import time
 import logging
 import ast
 from pathlib import Path
 
-
-from medialib.myMediaLib_cue import simple_parseCue
-from medialib.myMediaLib_cue import parseCue
-from medialib.myMediaLib_cue import GetTrackInfoVia_ext
+from celery import current_app as current_celery_app, shared_task
+from celery.result import AsyncResult
 
 from celerytools import BASE_ENCODING
 from celerytools import mymedialib_cfg
@@ -45,12 +25,33 @@ from configparser import ConfigParser
 cfg_fp = ConfigParser()
 cfg_fp.read(medialib_fp_cfg)
 
-logger = logging.getLogger('controller_logger.tools')
+logger = logging.getLogger('celery.tools')
 
-musicbrainzngs.set_useragent("python-discid-example", "0.1", "your@mail")
+def create_celery():
+    celery_app = current_celery_app
+    celery_app.config_from_object(settings, namespace="CELERY")
+
+    return celery_app
 
 
-posix_nice_value = int(cfg_fp['FP_PROCESS']['posix_nice_value'])
+def get_task_info(task_id):
+    """
+    return task info according to the task_id
+    """
+    task = AsyncResult(task_id)
+    state = task.state
+
+    if state == "FAILURE":
+        error = str(task.result)
+        response = {
+            "state": task.state,
+            "error": error,
+        }
+    else:
+        response = {
+            "state": task.state,
+        }
+    return response
 	
 		
 def acoustID_lookup_celery_wrapper(self,*fp_args):

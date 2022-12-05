@@ -18,6 +18,7 @@ from pathlib import Path
 from redis import Redis
 from celery import Celery
 from celery_progress.backend import ProgressRecorder
+from celery.result import AsyncResult
 import celery_progress
 import time
 import logging
@@ -146,6 +147,7 @@ def check_job_status_via_result(result):
 			print('Progress:', get_fp_overall_progress(result.children[0]))
 
 def get_async_res_via_id(res_id_str):
+	app = Celery(__name__)
 	app.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://192.168.1.65:6379")
 	app.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://192.168.1.65:6379")
 	app.conf.imports = 'fpgenerator'
