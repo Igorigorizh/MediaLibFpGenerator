@@ -11,7 +11,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from . import fp_router
-from .schemas import UserBody
+from .schemas import FolderRequestsBody
 from .tasks import find_new_music_folder_task, callback_acoustID_request, callback_MB_get_releases_by_discid_request, callback_FP_gen, task_test_logger
 from .models import Fp
 #from fpgenerator.database import get_db_session
@@ -25,12 +25,12 @@ templates = Jinja2Templates(directory="fpgenerator/celerytools/templates")
 def form_example_get(request: Request):
     return templates.TemplateResponse("form.html", {"request": request})
 
-@fp_router.post("/form/submit")
-def form_example_post(path: str = Form(...), fp: str = None):
-    if fp == 'X':
-        task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',([path],[],[],'initial'),link=callback_FP_gen.s())
+@fp_router.post("/form/")
+def form_example_post(folder_req_body: FolderRequestsBody):
+    if folder_req_body.fp_flag:
+        task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',([folder_req_body.path],[],[],'initial'),link=callback_FP_gen.s())
     else:
-        task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',([path],[],[],'initial'))
+        task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',([folder_req_body.path],[],[],'initial'))
     print('res:',task)
 
     return JSONResponse({"task_id": task.task_id})    
@@ -40,7 +40,7 @@ def fp_test():
     task_test_logger.delay()
     return {"message": "send task to Celery successfully"}
     
-@fp_router.get("/task_status/")
+@fp_router.get("/form/task_status/")
 def task_status(task_id: str):
     task = AsyncResult(task_id, app=current_celery_app)
     state = task.state
