@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Celery example</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.0/css/bootstrap.min.css"
+        integrity="sha512-XWTTruHZEYJsxV3W/lSXG1n3Q39YIWOstqvmFsdNEEQfHoZ6vm6E9GK2OrF6DSJSpIbRbi+Nn0WDPID9O7xB2Q=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+</head>
+<body>
+	
+	
+  <div class="container">
+    <div class="row">
+      <div class="col-12 col-md-4">
+        <form id="your-form" action="/submit">
+
+          <div class="mb-3">
+            <label for="path" class="form-label">Root folder</label>
+            <input type="text" class="form-control" id="path" name="path">
+            <div class="form-check mb-3">
+				  <label class="form-check-label">
+					<input class="form-check-input" type="checkbox" name="fp"> with FP
+				  </label>
+				</div>
+          </div>
+          <div class="mb-3" id="messages"></div>
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+<script>
+  
+
+  function serialize(data) {
+    let obj = {};
+    for (let [key, value] of data) {
+      if (obj[key] !== undefined) {
+        if (!Array.isArray(obj[key])) {
+          obj[key] = [obj[key]];
+        }
+        obj[key].push(value);
+      } else {
+        obj[key] = value;
+      }
+    }
+    return obj;
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    const yourForm = document.getElementById("your-form");
+    yourForm.addEventListener("submit", function(event) {
+      event.preventDefault();
+      const submitBtn = yourForm.querySelector('button[type="submit"]');
+      const btnHtml = submitBtn.innerHTML;
+      const spinnerHtml = 'Processing...';
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = spinnerHtml;
+
+      const msg = yourForm.querySelector('#messages');
+      msg.innerHTML = '';
+
+      // Get all field data from the form
+      let data = new FormData(yourForm);
+      // Convert to an object
+      let formData = serialize(data);
+
+      fetch('/fp/form/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+		  
+        },
+        body: JSON.stringify(formData),
+      })
+        .then(response => response.json())
+        .then((res) => {
+          // after we get Celery task id, we start polling
+          const task_id = res.task_id;
+          //updateProgress(yourForm, task_id, btnHtml);
+          console.log(res);
+        })
+        .catch((error) => {
+            console.error('Error:', error)
+          }
+        );
+    });
+  });
+</script>
+
+</body>
+</html>

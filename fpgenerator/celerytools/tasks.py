@@ -1,13 +1,20 @@
 import os
 
+import logging
+
 from celery import Celery
 from celery import group
 from celery import Task
+from celery import shared_task
+from celery.utils.log import get_task_logger
+
 from celery_progress.backend import ProgressRecorder
 import sys
 print('\n', "in worker: sys_path:", sys.path)
 
-from . import BASE_ENCODING
+from celery import current_app as app
+
+from .. import BASE_ENCODING
 
 from medialib.myMediaLib_fp_tools import get_FP_and_discID_for_album
 from medialib.myMediaLib_fp_tools import acoustID_lookup_celery_wrapper
@@ -15,14 +22,15 @@ from medialib.myMediaLib_fp_tools import MB_get_releases_by_discid_celery_wrappe
 
 from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
 
+logger = get_task_logger(__name__)
 
-app = Celery(__name__)
-app.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379")
-app.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379")
-app.conf.imports = 'fpgenerator'
-app.conf.task_serializer = 'pickle'
-app.conf.result_serializer = 'pickle'
-app.conf.accept_content = ['application/json', 'application/x-python-serialize']
+#app = Celery(__name__)
+#app.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379")
+#app.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379")
+#app.conf.imports = 'fpgenerator'
+#app.conf.task_serializer = 'pickle'
+#app.conf.result_serializer = 'pickle'
+#app.conf.accept_content = ['application/json', 'application/x-python-serialize']
 
 
 class ProgressTask(Task):
@@ -63,7 +71,7 @@ class Media_FileSystem_Helper_Progress(mfsh):
 			#print('in iterrator:',self.progress_recorder,id(self.progress_recorder),self._current_iteration)
 			self.progress_recorder.set_progress(self._current_iteration, self._current_iteration+1, description=self.progress_recorder_descr)	
 
-@app.task(base=ProgressTask, name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
+@shared_task(base=ProgressTask, name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
 def find_new_music_folder_task(self, *args):
 	# get instance of Media_FileSystem_Helper_Progress
 	mfsh_obj = Media_FileSystem_Helper_Progress()
@@ -73,7 +81,7 @@ def find_new_music_folder_task(self, *args):
 	return mfsh_obj.find_new_music_folder(*args)
 
 
-@app.task(name="tasks.callback_acoustID_request")
+@shared_task(name="tasks.callback_acoustID_request")
 def callback_acoustID_request(result):
 	#acoustID.lookup(apikey, fingerprint, duration)
 	API_KEY = 'cSpUJKpD'
@@ -91,7 +99,7 @@ def callback_acoustID_request(result):
 	print('acoustId call - OK')	
 	return result['convDL']
 	
-@app.task(name="tasks.callback_MB_get_releases_by_discid_request")
+@shared_task(name="tasks.callback_MB_get_releases_by_discid_request")
 def callback_MB_get_releases_by_discid_request(result):
 	if 'discID' not in result:
 		return {'RC':-4}
@@ -102,6 +110,7 @@ def callback_MB_get_releases_by_discid_request(result):
 	return response	
 
 @app.task(name="tasks.callback_FP_gen")
+#@shared_task(name="tasks.callback_FP_gen")
 def callback_FP_gen(result):
 	# Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задача.\
 	# Ниже только формируется план
@@ -118,16 +127,21 @@ def callback_FP_gen(result):
 #music_folders_generation_scheduler = app.task(name='music_folders_generation_scheduler-new_recogn_name',serializer='json',bind=True)\
 #											(CeleryScheduler().music_folders_generation_scheduler)		
 
-get_FP_and_discID_for_album = app.task(name='get_FP_and_discID_for_album',bind=True)(get_FP_and_discID_for_album)
-acoustID_lookup_celery_wrapper = app.task(name='acoustID_lookup_celery_wrapper',bind=True)(acoustID_lookup_celery_wrapper)
-MB_get_releases_by_discid_celery_wrapper = app.task(name='MB_get_releases_by_discid_celery_wrapper',bind=True)(MB_get_releases_by_discid_celery_wrapper)	
+get_FP_and_discID_for_album = shared_task(name='get_FP_and_discID_for_album',bind=True)(get_FP_and_discID_for_album)
+acoustID_lookup_celery_wrapper = shared_task(name='acoustID_lookup_celery_wrapper',bind=True)(acoustID_lookup_celery_wrapper)
+MB_get_releases_by_discid_celery_wrapper = shared_task(name='MB_get_releases_by_discid_celery_wrapper',bind=True)(MB_get_releases_by_discid_celery_wrapper)	
 
 fp_post_processing_req = group(callback_MB_get_releases_by_discid_request.s(), callback_acoustID_request.s())
 
+@shared_task()
+def task_test_logger():
+    logger.info("test")
+
+
 def main():
-	app.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://192.168.1.65:6379")
-	app.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://192.168.1.65:6379")
-	app.control.purge()
+	#app.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://192.168.1.65:6379")
+	#app.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://192.168.1.65:6379")
+	#app.control.purge()
 	#acoustID_lookup_celery_wrapper(1,2)
 	#exit(1)
 	task_list = []
@@ -141,8 +155,8 @@ def main():
 	path2 = '/home/fpgenerator/MediaLibFpGenerator/music/MUSIC/MP3_COLLECTION'
 	#task_first_res = app.send_task('find_new_music_folder-new_recogn_name',([path,path2],[],[],'initial'))
 	
-	print(task_first_res,type(task_first_res))
+	#print(task_first_res,type(task_first_res))
 	
 
 if __name__ == '__main__':
-	main()
+    main()
