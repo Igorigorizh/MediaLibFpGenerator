@@ -8,8 +8,7 @@ from pathlib import Path
 from celery import current_app as current_celery_app, shared_task
 from celery.result import AsyncResult
 
-from celerytools import BASE_ENCODING
-from celerytools import mymedialib_cfg
+from celery.utils.log import get_task_logger
 from celerytools import medialib_fp_cfg
 
 
@@ -74,13 +73,13 @@ def MB_get_releases_by_discid_celery_wrapper(self,*discID_arg):
     except Exception as e:
         print(e)
         return {'RC':-6,'error':str(e)}
-		
+
     if 'disc' not in MB_discID_result:
         return {'RC':-7,'error':'DiskID MB - NOT detected','MB_discID_result':MB_discID_result}
-	
-		
+
+
     return {'RC':1,'MB_discID_result':MB_discID_result}
-	
+
 async def acoustID_lookup_wrapper(fp):
     API_KEY = 'cSpUJKpD'
     meta = ["recordings","recordingids","releases","releaseids","releasegroups","releasegroupids", "tracks", "compress", "usermeta", "sources"]

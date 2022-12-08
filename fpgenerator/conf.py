@@ -30,25 +30,26 @@ class BaseConfig:
         #     "schedule": 5.0,  # five seconds
         # },
     }
-
-    CELERY_TASK_DEFAULT_QUEUE: str = "default"
+    # There is an issue with Queue settings below. Celery ignores/missing tasks when uncommented
+    
+    #CELERY_TASK_DEFAULT_QUEUE: str = "default"
 
     # Force all queues to be explicitly listed in `CELERY_TASK_QUEUES` to help prevent typos
-    CELERY_TASK_CREATE_MISSING_QUEUES: bool = False
+    #CELERY_TASK_CREATE_MISSING_QUEUES: bool = False
 
-    CELERY_TASK_QUEUES: list = (
+    #CELERY_TASK_QUEUES: list = (
         # need to define default queue here or exception would be raised
-        Queue("default"),
+    #    Queue("default"),
 
-        Queue("high_priority"),
-        Queue("low_priority"),
-    )
+    #    Queue("high_priority"),
+    #    Queue("low_priority"),
+    #)
 
-    CELERY_TASK_ROUTES = (route_task,)
+    #CELERY_TASK_ROUTES = (route_task,)
 
 
 class DevelopmentConfig(BaseConfig):
-    pass`
+    pass
 
 
 class ProductionConfig(BaseConfig):
@@ -60,6 +61,12 @@ class TestingConfig(BaseConfig):
     DATABASE_URL: str = "sqlite:///./test.db"
     DATABASE_CONNECT_DICT: dict = {"check_same_thread": False}
 
+    CELERY_BROKER_URL: str = os.environ.get("CELERY_BROKER_URL", "redis://192.168.1.65:6379")
+    CELERY_RESULT_BACKEND: str = os.environ.get("CELERY_RESULT_BACKEND", "redis://192.168.1.65:6379")
+
+    WS_MESSAGE_QUEUE: str = os.environ.get("WS_MESSAGE_QUEUE", "redis://192.168.1.65:6379")
+	
+
 
 @lru_cache()
 def get_settings():
@@ -69,7 +76,7 @@ def get_settings():
         "testing": TestingConfig
     }
 
-    config_name = os.environ.get("FASTAPI_CONFIG", "development")
+    config_name = os.environ.get("FASTAPI_CONFIG", "testing")
     config_cls = config_cls_dict[config_name]
     return config_cls()
 
