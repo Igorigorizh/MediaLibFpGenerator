@@ -9,6 +9,27 @@ services:
       - redis_data:/data
     restart: always
    
+  fpgenerator:
+    build:
+      context: .
+      dockerfile: ./fpgenerator/Dockerfile
+      args:
+      - medialib_bld_ver=1
+    image: fpgenerator
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0  
+      - FASTAPI_CONFIG=development 
+    volumes:
+      - log:/home/fpgenerator/MediaLibFpGenerator/log
+      - music:/home/fpgenerator/MediaLibFpGenerator/music
+      - config:/home/fpgenerator/MediaLibFpGenerator/config  
+    command: celery --app=fpgenerator.celerytools.tasks.app worker -P threads --concurrency=1 --loglevel=info --logfile=log/celery.log  
+    depends_on:
+     - redis
+    restart: always 
+
+
   webui:
     build:
       context: .
@@ -29,27 +50,6 @@ services:
      - redis
      - fpgenerator	
     restart: always    
-    
-   
-  fpgenerator:
-    build:
-      context: .
-      dockerfile: ./fpgenerator/Dockerfile
-      args:
-      - medialib_bld_ver=1
-    image: fpgenerator
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0  
-      - FASTAPI_CONFIG=development 
-    volumes:
-      - log:/home/fpgenerator/MediaLibFpGenerator/log
-      - music:/home/fpgenerator/MediaLibFpGenerator/music
-      - config:/home/fpgenerator/MediaLibFpGenerator/config  
-    command: celery --app=fpgenerator.celerytools.tasks.app worker -P threads --concurrency=1 --loglevel=info --logfile=log/celery.log  
-    depends_on:
-     - redis
-    restart: always 
     
   dashboard:
     image: fpgenerator
