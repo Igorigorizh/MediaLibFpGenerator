@@ -110,23 +110,24 @@ def callback_MB_get_releases_by_discid_request(result):
 	return response	
 
 @app.task(name="tasks.callback_FP_gen")
-#@shared_task(name="tasks.callback_FP_gen")
-def callback_FP_gen(result):
+def callback_FP_gen(result,*args):
 	# Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задача.\
 	# Ниже только формируется план
 	# scheduler.get_fp_overall_progress(root_task=res.children[0]), где res = get_async_res_via_id('592027a3-2d10-4f27-934e-fc2f6b67dc1e')
 	folderL = result
+	print()
+	print('args in callback_FP_gen:',args)
 	
 	if folderL:
 		for folder_name in folderL:
-			task_fp_res = app.send_task('get_FP_and_discID_for_album',(folder_name, 0, 1, 'multy', 'FP'), link=fp_post_processing_req)
+			if 'ACOUSTID_MB_REQ' in args:
+				task_fp_res = app.send_task('get_FP_and_discID_for_album',(folder_name, 0, 1, 'multy', 'FP'), link=fp_post_processing_req)
+			else:
+				task_fp_res = app.send_task('get_FP_and_discID_for_album',(folder_name, 0, 1, 'multy', 'FP'))
 	else:
 		print("Error in callback_FP_gen: None result")
 		
 		
-#music_folders_generation_scheduler = app.task(name='music_folders_generation_scheduler-new_recogn_name',serializer='json',bind=True)\
-#											(CeleryScheduler().music_folders_generation_scheduler)		
-
 get_FP_and_discID_for_album = shared_task(name='get_FP_and_discID_for_album',bind=True)(get_FP_and_discID_for_album)
 acoustID_lookup_celery_wrapper = shared_task(name='acoustID_lookup_celery_wrapper',bind=True)(acoustID_lookup_celery_wrapper)
 MB_get_releases_by_discid_celery_wrapper = shared_task(name='MB_get_releases_by_discid_celery_wrapper',bind=True)(MB_get_releases_by_discid_celery_wrapper)	

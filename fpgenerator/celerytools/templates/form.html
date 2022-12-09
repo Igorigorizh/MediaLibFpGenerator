@@ -23,7 +23,14 @@
 				  <label class="form-check-label">
 					<input class="form-check-input" type="checkbox" id="fp_flag" name="fp_flag"> with FP
 				  </label>
+			</div>
+			
+			<div class="form-check mb-3">
+				  <label class="form-check-label">
+					<input class="form-check-input" type="checkbox" id="post_proc_flag" name="post_proc_flag"> with acoustId and MusicBrainz meta data request
+				  </label>
 				</div>
+				
           </div>
           <div class="mb-3" id="messages"></div>
           <button type="submit" class="btn btn-primary">Submit</button>
@@ -115,7 +122,7 @@
         .then((res) => {
           // after we get Celery task id, we start polling
           const task_id = JSON.stringify(res.task_id);
-          updateProgress(yourForm, task_id, btnHtml);
+          //updateProgress(yourForm, task_id, btnHtml);
           console.log(res);
         })
         .catch((error) => {
