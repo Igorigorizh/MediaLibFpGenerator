@@ -31,7 +31,7 @@ def form_fp_process_start(folder_req_body: FolderRequestsBody):
     if folder_req_body.post_proc_flag:
         arg = 'ACOUSTID_MB_REQ'
     if folder_req_body.fp_flag:
-        task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',([folder_req_body.path],[],[],'initial'),link=callback_FP_gen.s(arg))
+        task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',([folder_req_body.path],[],[],'initial'),link=callback_FP_gen.s())
     else:
         task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',([folder_req_body.path],[],[],'initial'))
     print('res:',task)
