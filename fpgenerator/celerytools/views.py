@@ -1,5 +1,5 @@
 import logging
-import random
+
 from string import ascii_lowercase
 
 import requests
