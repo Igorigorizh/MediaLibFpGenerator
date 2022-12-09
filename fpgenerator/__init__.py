@@ -12,8 +12,8 @@ from fpgenerator.conf import settings
 def create_app() -> FastAPI:
     app = FastAPI()
 
-    from fpgenerator.fp_logging import configure_logging
-    configure_logging()
+    #from fpgenerator.fp_logging import configure_logging
+    #configure_logging()
 
     # do this before loading routes
     from fpgenerator.celery_utils import create_celery
