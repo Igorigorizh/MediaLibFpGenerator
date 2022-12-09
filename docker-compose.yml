@@ -42,7 +42,7 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0  
       - FASTAPI_CONFIG=development 
     volumes:
-      - .:/app
+      - .:/fpgenerator
       - config:/home/fpgenerator/MediaLibFpGenerator/config  
     command: uvicorn main:app --reload --reload-dir fpgenerator --host 0.0.0.0  
     ports:
