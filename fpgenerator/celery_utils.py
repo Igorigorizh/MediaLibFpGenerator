@@ -14,6 +14,8 @@ def create_celery():
     celery_app.conf.task_serializer = 'pickle'
     celery_app.conf.result_serializer = 'pickle'
     celery_app.conf.accept_content = ['application/json', 'application/x-python-serialize']
+    celery_app.conf.update(task_serializer='pickle', accept_content=['application/json', 'application/x-python-serialize']\
+                                                               , result_serializer='pickle')
 
     return celery_app
 
