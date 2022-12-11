@@ -11,9 +11,9 @@ def create_celery():
     celery_app = current_celery_app
     celery_app.config_from_object(settings, namespace="CELERY")
     celery_app.conf.imports = 'fpgenerator'
-    #celery_app.conf.task_serializer = 'pickle'
-    #celery_app.conf.result_serializer = 'pickle'
-    celery_app.conf.accept_content = ['application/json', 'application/x-python-serialize']
+    celery_app.conf.task_serializer = 'pickle'
+    celery_app.conf.result_serializer = 'pickle'
+    celery_app.conf.accept_content = ['application/json', 'application/x-python-serialize', 'pickle']
 
     return celery_app
 
