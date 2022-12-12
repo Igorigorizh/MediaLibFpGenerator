@@ -35,12 +35,83 @@
           <div class="mb-3" id="messages"></div>
           <button type="submit" class="btn btn-primary">Submit</button>
         </form>
+		
+		
       </div>
+	  <div class="row">
+	  <br>
+	  </div>
+	  <div class="row">
+	  <div class="col-13 col-md-5">
+	  <div class="progress">
+		  <div class="progress-bar" role="progressbar" style="width: 15%;" aria-valuenow="15" aria-valuemin="0" aria-valuemax="100">15%</div>
+		</div>
+	  </div>
+	  </div>
+	  
     </div>
   </div>
 
 
 <script>
+	var error_count=0;var myVar;
+    //var x=document.querySelector('.progress-bar');         
+    //window.onload=callMe();
+    //;
+    //function callMe(){
+     ///   x.style.width=null;
+       //  myVar=setInterval(function(){
+        //      updateBar();  
+       // },3000); 
+    //}
+    function updateBar(value){
+       if(value==100){clearInterval(myVar);return}
+        
+       x.style.width=value+"%";          
+       x.innerHTML=value+"%";
+    }
+	
+	
+	function updateProgressBar(bar, task_id, btnHtml) {
+    fetch(`/fp/form/task_progress/?task_id=${task_id}`, {
+      method: 'GET',
+    })
+	
+	 .then(response => response.json())
+      .then((res) => {
+        
+		
+		if ( 'task_id' in res ){
+		 console.log(res)	
+		 task_id = res.task_id;
+		}
+		
+		if ( 'error' in res ){
+		 console.log(res.error)	
+		 error_count+=1
+		 if error_count < 10{
+		 setTimeout(function() {
+            updateProgressBar(bar, task_id, btnHtml);
+          }, 3000);
+		  } else {
+		 
+		 return;
+		}
+		const taskProgress = res.progress;
+		console.log(taskProgress);
+		//if(taskProgress==100) {return}
+        
+       bar.style.width=taskProgress+"%";          
+       //bar.innerHTML=taskProgress+"%";
+	   setTimeout(function() {
+            updateProgressBar(bar, task_id, btnHtml);
+          }, 3000);
+		
+	}
+	)
+	}
+	
+
     function updateProgress(yourForm, task_id, btnHtml) {
     fetch(`/fp/form/task_status/?task_id=${task_id}`, {
       method: 'GET',
@@ -49,6 +120,7 @@
       .then(response => response.json())
       .then((res) => {
         const taskStatus = res.state;
+		
 
         if (['SUCCESS', 'FAILURE'].includes(taskStatus)) {
           const msg = yourForm.querySelector('#messages');
@@ -67,7 +139,7 @@
           // the task is still running
           setTimeout(function() {
             updateProgress(yourForm, task_id, btnHtml);
-          }, 1000);
+          }, 3000);
         }
       })
       .catch((error) => {
@@ -94,6 +166,7 @@
 
   document.addEventListener("DOMContentLoaded", function() {
     const yourForm = document.getElementById("your-form");
+	const bar = document.querySelector('.progress-bar');   
     yourForm.addEventListener("submit", function(event) {
       event.preventDefault();
       const submitBtn = yourForm.querySelector('button[type="submit"]');
@@ -122,7 +195,8 @@
         .then((res) => {
           // after we get Celery task id, we start polling
           const task_id = JSON.stringify(res.task_id);
-          //updateProgress(yourForm, task_id, btnHtml);
+          updateProgress(yourForm, task_id, btnHtml);
+		  updateProgressBar(bar, task_id, btnHtml)
           console.log(res);
         })
         .catch((error) => {

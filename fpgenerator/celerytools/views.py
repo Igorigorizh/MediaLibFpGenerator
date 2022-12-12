@@ -1,7 +1,7 @@
 import logging
 
 from string import ascii_lowercase
-
+import time
 import requests
 from celery.result import AsyncResult
 from celery import current_app as current_celery_app
@@ -29,9 +29,10 @@ def form_example_get(request: Request):
 def form_fp_process_start(folder_req_body: FolderRequestsBody):
     arg = ''
     if folder_req_body.post_proc_flag:
+        print("in view:", folder_req_body.post_proc_flag)
         arg = 'ACOUSTID_MB_REQ'
     if folder_req_body.fp_flag:
-        task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',([folder_req_body.path],[],[],'initial'),link=callback_FP_gen.s('ACOUSTID_MB_REQ'))
+        task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',([folder_req_body.path],[],[],'initial'),link=callback_FP_gen.s(arg))
     else:
         task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',([folder_req_body.path],[],[],'initial'))
     print('res:',task)
@@ -45,6 +46,9 @@ def fp_test():
     
 @fp_router.get("/form/task_status/")
 def task_status(task_id: str):
+
+    if '\"' in task_id[0] and '\"' in task_id[-1]:
+        task_id = task_id[1:-1]
     task = AsyncResult(task_id, app=current_celery_app)
     state = task.state
 
@@ -58,5 +62,66 @@ def task_status(task_id: str):
         response = {
             'state': state,
         }
+    return JSONResponse(response)
+    
+@fp_router.get("/form/task_progress/")    
+def get_fp_overall_progress(task_id: str):
+    progress = 0
+    task_items = []
+    if '\"' in task_id[0] and '\"' in task_id[-1]:
+        task_id = task_id[1:-1]
+    task = AsyncResult(task_id, app=current_celery_app)
+    state = task.state
+    print('state:',state)
+    
+    if state == 'FAILURE':
+        error = str(task.result)
+        response = {
+            'state': state,
+            'error': error,
+        }
+        return JSONResponse(response)
+
+        
+    else:    
+        if task.children:
+            total_task_num = len(task.children)
+        else:    
+            response = {
+            'state': state,
+            'error': 'None object',
+            }
+            return JSONResponse(response)
+        
+        print()
+        print('Sub tasks for progress:',total_task_num)
+        if total_task_num == 0:
+            response = {
+            'state': state,
+            'error': 'total_task_num = 0',
+            }
+            return JSONResponse(response)
+        
+        i = 0
+        for task_item in task.children:
+            if task_item.state == 'SUCCESS':
+                i+=1
+            print(task_item.task_id, task_item.state)    
+            task_items.append(task_item.task_id)
+            #time.sleep(.1)	
+        progress = int((i/total_task_num)*100)    
+        if state == 'SUCCESS' and len(task_items) == 1:
+            response = {
+                'state': state,
+                'progress': progress,
+                'task_id': task_items[0]
+            }
+        elif state == 'SUCCESS' and len(task_items) > 1:
+            response = {
+                'state': state,
+                'progress': progress
+           }
+
+        
     return JSONResponse(response)
 
