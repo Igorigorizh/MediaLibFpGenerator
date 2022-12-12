@@ -24,7 +24,7 @@ import time
 import logging
 
 
-from . import BASE_ENCODING
+
 
 logger = logging.getLogger('controller_logger.scheduler')
 
