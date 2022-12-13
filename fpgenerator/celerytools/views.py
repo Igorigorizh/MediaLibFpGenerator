@@ -162,7 +162,8 @@ def get_fp_overall_progress(task_id: str):
             response = {
                 'state': state,
                 'progress': progress, 
-                'total': total_task_num
+                'total': total_task_num,
+                'succeed':i
            }
 
         
