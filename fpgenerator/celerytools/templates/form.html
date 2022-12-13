@@ -116,7 +116,7 @@
 		const total = res.total;
 		console.log(taskProgress);
 		bar.style.width=taskProgress+"%";          
-        bar.innerHTML=taskProgress+"("+succeed+":"+total+")"+"%";
+        bar.innerHTML=taskProgress++"%"+" ("+succeed+":"+total+")";
 		if(taskProgress==100) {return}
         
       
