@@ -34,6 +34,7 @@
           </div>
           <div class="mb-3" id="messages"></div>
           <button type="submit" class="btn btn-primary">Submit</button>
+		  <button type="stop" class="btn btn-primary">Stop</button>
         </form>
 		
 		
@@ -43,8 +44,9 @@
 	  </div>
 	  <div class="row">
 	  <div class="col-13 col-md-5">
+	  <h10>Overall albums progress</h10>
 	  <div class="progress">
-		  <div class="progress-bar" role="progressbar" style="width: 15%;" aria-valuenow="15" aria-valuemin="0" aria-valuemax="100">15%</div>
+		  <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
 		</div>
 	  </div>
 	  </div>
@@ -54,26 +56,10 @@
 
 
 <script>
-	var error_count=0;var myVar;
-    //var x=document.querySelector('.progress-bar');         
-    //window.onload=callMe();
-    //;
-    //function callMe(){
-     ///   x.style.width=null;
-       //  myVar=setInterval(function(){
-        //      updateBar();  
-       // },3000); 
-    //}
-    function updateBar(value){
-       if(value==100){clearInterval(myVar);return}
-        
-       x.style.width=value+"%";          
-       x.innerHTML=value+"%";
-    }
-	
-	
-	function updateProgressBar(bar, task_id, btnHtml) {
-    fetch(`/fp/form/task_progress/?task_id=${task_id}`, {
+	var error_count=0;
+
+	function getSucessor(bar, task_id) {
+    fetch(`/fp/form/task_sucessor/?task_id=${task_id}`, {
       method: 'GET',
     })
 	
@@ -83,29 +69,58 @@
 		
 		if ( 'task_id' in res ){
 		 console.log(res)	
-		 task_id = res.task_id;
+		 updateProgressBar(bar, res.task_id)
 		}
 		
 		if ( 'error' in res ){
 		 console.log(res.error)	
 		 error_count+=1
-		 if error_count < 10{
+		 if ( error_count < 10 ){
 		 setTimeout(function() {
-            updateProgressBar(bar, task_id, btnHtml);
-          }, 3000);
+            getSucessor(task_id);
+          }, 5000);
 		  } else {
 		 
 		 return;
 		}
+		}
+		
+		
+	}
+	)
+	}
+	
+	
+	function updateProgressBar(bar, task_id) {
+    fetch(`/fp/form/task_progress/?task_id=${task_id}`, {
+      method: 'GET',
+    })
+	
+	 .then(response => response.json())
+      .then((res) => {
+		
+		if ( 'error' in res ){
+		 console.log(res.error)	
+		 error_count+=1
+		 if ( error_count < 10 ){
+		 setTimeout(function() {
+            updateProgressBar(bar, task_id);
+          }, 5000);
+		  } else {
+		 
+		 return;
+		}
+		}
 		const taskProgress = res.progress;
 		console.log(taskProgress);
-		//if(taskProgress==100) {return}
+		bar.style.width=taskProgress+"%";          
+        bar.innerHTML=taskProgress+"%";
+		if(taskProgress==100) {return}
         
-       bar.style.width=taskProgress+"%";          
-       //bar.innerHTML=taskProgress+"%";
+      
 	   setTimeout(function() {
-            updateProgressBar(bar, task_id, btnHtml);
-          }, 3000);
+            updateProgressBar(bar, task_id);
+          }, 10000);
 		
 	}
 	)
@@ -113,6 +128,7 @@
 	
 
     function updateProgress(yourForm, task_id, btnHtml) {
+	const bar = document.querySelector('.progress-bar');
     fetch(`/fp/form/task_status/?task_id=${task_id}`, {
       method: 'GET',
     })
@@ -127,7 +143,8 @@
           const submitBtn = yourForm.querySelector('button[type="submit"]');
 
           if (taskStatus === 'SUCCESS') {
-            msg.innerHTML = 'job succeeded';
+            msg.innerHTML = 'root job succeeded';
+			getSucessor(bar, task_id)
           } else if (taskStatus === 'FAILURE') {
             // display error message on the form
             msg.innerHTML = res.error;
@@ -172,6 +189,7 @@
       const submitBtn = yourForm.querySelector('button[type="submit"]');
       const btnHtml = submitBtn.innerHTML;
       const spinnerHtml = 'Processing...';
+	  error_count = 0;		
       submitBtn.disabled = true;
       submitBtn.innerHTML = spinnerHtml;
 
@@ -196,7 +214,7 @@
           // after we get Celery task id, we start polling
           const task_id = JSON.stringify(res.task_id);
           updateProgress(yourForm, task_id, btnHtml);
-		  updateProgressBar(bar, task_id, btnHtml)
+		  //updateProgressBar(bar, task_id, btnHtml)
           console.log(res);
         })
         .catch((error) => {
