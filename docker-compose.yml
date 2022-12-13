@@ -30,13 +30,8 @@ services:
     restart: always 
 
 
-  webui:
-    build:
-      context: .
-      dockerfile: ./fpgenerator/Dockerfile
-      args:
-      - medialib_bld_ver=1
-    image: fpgenerator_webui
+  fp_web:
+    image: fpgenerator
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0  
