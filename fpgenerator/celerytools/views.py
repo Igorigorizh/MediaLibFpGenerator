@@ -161,7 +161,8 @@ def get_fp_overall_progress(task_id: str):
         if state == 'SUCCESS' and len(task_items) >= 1:
             response = {
                 'state': state,
-                'progress': progress
+                'progress': progress, 
+                'total': total_task_num
            }
 
         
