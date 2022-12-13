@@ -112,9 +112,11 @@
 		}
 		}
 		const taskProgress = res.progress;
+		const succeed = res.succeed;
+		const total = res.total;
 		console.log(taskProgress);
 		bar.style.width=taskProgress+"%";          
-        bar.innerHTML=taskProgress+"%";
+        bar.innerHTML=taskProgress+"("+succeed+":"+total+")"+"%";
 		if(taskProgress==100) {return}
         
       
