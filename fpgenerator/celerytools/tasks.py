@@ -111,7 +111,7 @@ def callback_MB_get_releases_by_discid_request(result):
 
 @app.task(name="tasks.callback_FP_gen")
 def callback_FP_gen(result,*args):
-	# Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задача.\
+	# Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задач.\
 	# Ниже только формируется план
 	# scheduler.get_fp_overall_progress(root_task=res.children[0]), где res = get_async_res_via_id('592027a3-2d10-4f27-934e-fc2f6b67dc1e')
 	folderL = result
@@ -136,7 +136,7 @@ fp_post_processing_req = group(callback_MB_get_releases_by_discid_request.s(), c
 
 @shared_task()
 def task_test_logger():
-    logger.info("test")
+    logger.info("test logger")
 
 
 def main():

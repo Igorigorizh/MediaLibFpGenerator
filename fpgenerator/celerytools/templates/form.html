@@ -34,6 +34,7 @@
           </div>
           <div class="mb-3" id="messages"></div>
           <button type="submit" class="btn btn-primary">Submit</button>
+		  <button type="stop" class="btn btn-primary">Stop</button>
         </form>
 		
 		
@@ -55,23 +56,8 @@
 
 
 <script>
-	var error_count=0;var myVar;
-    //var x=document.querySelector('.progress-bar');         
-    //window.onload=callMe();
-    //;
-    //function callMe(){
-     ///   x.style.width=null;
-       //  myVar=setInterval(function(){
-        //      updateBar();  
-       // },3000); 
-    //}
-    function updateBar(value){
-       if(value==100){clearInterval(myVar);return}
-        
-       x.style.width=value+"%";          
-       x.innerHTML=value+"%";
-    }
-	
+	var error_count=0;
+
 	function getSucessor(bar, task_id) {
     fetch(`/fp/form/task_sucessor/?task_id=${task_id}`, {
       method: 'GET',
@@ -157,7 +143,7 @@
           const submitBtn = yourForm.querySelector('button[type="submit"]');
 
           if (taskStatus === 'SUCCESS') {
-            msg.innerHTML = 'job succeeded';
+            msg.innerHTML = 'root job succeeded';
 			getSucessor(bar, task_id)
           } else if (taskStatus === 'FAILURE') {
             // display error message on the form

@@ -22,9 +22,13 @@ templates = Jinja2Templates(directory="fpgenerator/celerytools/templates")
 
 
 @fp_router.get("/form/")
-def form_example_get(request: Request):
+def form_fp_process_get(request: Request):
     return templates.TemplateResponse("form.html", {"request": request})
-
+   
+@fp_router.post("/form/stop")
+def stop_fp_process():
+    JSONResponse({"stopped": current_celery_app.control.purge()})
+    
 @fp_router.post("/form/")
 def form_fp_process_start(folder_req_body: FolderRequestsBody):
     arg = ''
@@ -40,10 +44,10 @@ def form_fp_process_start(folder_req_body: FolderRequestsBody):
 
     return JSONResponse({"task_id": task.task_id})    
 
-@fp_router.get("/fp_test/")
+@fp_router.get("/fp_test/test_logger")
 def fp_test():
-    task_test_logger.delay()
-    return {"message": "send task to Celery successfully"}
+    task = task_test_logger.delay()
+    return JSONResponse({"message": "send logger message task to Celery successfully","task_id": task.task_id})
     
 @fp_router.get("/form/task_status/")
 def task_status(task_id: str):
@@ -121,7 +125,6 @@ def get_fp_overall_progress(task_id: str):
         task_id = task_id[1:-1]
     task = AsyncResult(task_id, app=current_celery_app)
     state = task.state
-    print('state:',state)
     
     if state == 'FAILURE':
         error = str(task.result)
@@ -130,7 +133,6 @@ def get_fp_overall_progress(task_id: str):
             'error': error,
         }
         return JSONResponse(response)
-
         
     else:    
         if task.children:
@@ -141,9 +143,7 @@ def get_fp_overall_progress(task_id: str):
             'error': 'None object',
             }
             return JSONResponse(response)
-        
-        print()
-        print('Sub tasks for progress:',total_task_num)
+
         if total_task_num == 0:
             response = {
             'state': state,
@@ -155,17 +155,10 @@ def get_fp_overall_progress(task_id: str):
         for task_item in task.children:
             if task_item.state == 'SUCCESS':
                 i+=1
-            print(task_item.task_id, task_item.state)    
             task_items.append(task_item.task_id)
-            #time.sleep(.1)	
+
         progress = int((i/total_task_num)*100)    
-        if state == 'SUCCESS' and len(task_items) == 1:
-            response = {
-                'state': state,
-                'progress': progress,
-                'task_id': task_items[0]
-            }
-        elif state == 'SUCCESS' and len(task_items) > 1:
+        if state == 'SUCCESS' and len(task_items) >= 1:
             response = {
                 'state': state,
                 'progress': progress
