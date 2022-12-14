@@ -136,7 +136,7 @@ fp_post_processing_req = group(callback_MB_get_releases_by_discid_request.s(), c
 
 @shared_task()
 def task_test_logger():
-    logger.info("test logger")
+    logger.info("test fpgenerator logger")
 
 
 def main():
