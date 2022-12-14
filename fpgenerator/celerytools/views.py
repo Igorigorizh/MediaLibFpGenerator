@@ -9,6 +9,7 @@ from fastapi import FastAPI, Request, Body, Depends, status, Form
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+import json
 
 from . import fp_router
 from .schemas import FolderRequestsBody
@@ -20,6 +21,87 @@ from .models import Fp
 logger = logging.getLogger(__name__)
 templates = Jinja2Templates(directory="fpgenerator/celerytools/templates")
 
+@fp_router.get("/form/get_current_root_task/")
+def get_current_live_root_task():
+    root_task = []
+    response = find_live_jobs()
+    resp_body = json.loads(response.body.decode(encoding=response.charset))
+    print('resp_body:',resp_body)
+    response_item = []
+    if resp_body:
+        tasks = resp_body['tasks']
+
+        if tasks:
+            for task in resp_body['tasks']:
+                response = get_task_meta_data(task)
+                resp_meta_body = json.loads(response.body.decode(encoding=response.charset))   
+                if resp_meta_body['state'] != 'PENDING':     
+                    print(resp_meta_body['name'],resp_meta_body['parent_id'])
+                    parent_name_response = get_task_meta_data(resp_meta_body['parent_id'])
+                    parent = json.loads(parent_name_response.body.decode(encoding=parent_name_response.charset))
+                    response = {
+                        'state': resp_meta_body['state'],
+                        'name': task.name
+                        
+                    }
+                else:
+                    response = {
+                        'state': resp_meta_body['state'],
+                        
+                    }
+                    
+                response_item.append(response)    
+            
+            return JSONResponse(response_item)
+        else:
+            return JSONResponse({'error':'no active tasks'})
+
+@fp_router.get("/form/task_meta_data/")
+def get_task_meta_data(task_id: str):
+    if '\"' in task_id[0] and '\"' in task_id[-1]:
+        task_id = task_id[1:-1]
+        
+    task = AsyncResult(task_id, app=current_celery_app)
+    state = task.state
+    meta_data = task._get_task_meta()
+
+    if state == 'FAILURE':
+        error = str(task.result)
+        response = {
+            'state': state,
+            'error': error,
+        }
+    else:
+        if state == "PENDING":
+            response = {
+                'state': state,
+                'name': task.name
+               
+            }
+        else:    
+
+            response = {
+                'state': state,
+                'name': task.name,
+                'parent_id': meta_data['parent_id']
+                
+            }
+    return JSONResponse(response)
+
+@fp_router.get("/form/tasks_live/")
+def find_live_jobs():
+    i = current_celery_app.control.inspect()
+    # scheduled(): tasks with an ETA or countdown
+    # active():    tasks currently running - probably not revokable without terminate=True
+    # reserved():  enqueued tasks - usually revoked by purge() above
+    tasks = []
+    for queues in (i.active(), i.reserved(), i.scheduled()):
+        for task_list in queues.values():
+            for task in task_list:
+                task_id = task.get("request", {}).get("id", None) or task.get("id", None)
+                tasks.append(task_id)
+          
+    return JSONResponse({"tasks": tasks})            
 
 @fp_router.get("/form/")
 def form_fp_process_get(request: Request):
@@ -27,7 +109,7 @@ def form_fp_process_get(request: Request):
    
 @fp_router.post("/form/stop")
 def stop_fp_process():
-    JSONResponse({"stopped": current_celery_app.control.purge()})
+    return JSONResponse({"stopped": current_celery_app.control.purge()})
     
 @fp_router.post("/form/")
 def form_fp_process_start(folder_req_body: FolderRequestsBody):

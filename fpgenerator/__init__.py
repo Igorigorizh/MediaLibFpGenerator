@@ -11,15 +11,13 @@ from fpgenerator.conf import settings
 
 def create_app() -> FastAPI:
     app = FastAPI()
-    print("before logging")
-    from fpgenerator.fp_logging import configure_logging
-    print("after logging")
+    from fpgenerator.logging import configure_logging
     configure_logging()
 
     # do this before loading routes
     from fpgenerator.celery_utils import create_celery
     app.celery_app = create_celery()
-    # ????????? ? ????? ????? ?????? ???????? ??? ????? ?? celerytools	
+
     from fpgenerator.celerytools import fp_router
     app.include_router(fp_router)
 
@@ -43,6 +41,6 @@ def create_app() -> FastAPI:
     """
     @app.get("/")
     async def root():
-        return {"message": "FpGenerator is live"}
+        return {"message": "FpGenerator service is live"}
 
     return app
