@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import json
+import urllib.parse
 
 from . import fp_router
 from .schemas import FolderRequestsBody
@@ -20,6 +21,9 @@ from .models import Fp
 
 logger = logging.getLogger(__name__)
 templates = Jinja2Templates(directory="fpgenerator/celerytools/templates")
+
+flower_host_api = 'http://'+urllib.parse.urlparse(current_celery_app.conf.result_backend).netloc.split(':')[0]+':5556/api'
+flower_task_api = '{}/task'.format(flower_host_api)
 
 @fp_router.get("/form/get_current_root_task/")
 def get_current_live_root_task():
@@ -34,20 +38,24 @@ def get_current_live_root_task():
         if tasks:
             for task in resp_body['tasks']:
                 response = get_task_meta_data(task)
+                response_flower = flower_task_info(task)
                 resp_meta_body = json.loads(response.body.decode(encoding=response.charset))   
+                response_flower_body = json.loads(response_flower.body.decode(encoding=response_flower.charset)) 
+                
                 if resp_meta_body['state'] != 'PENDING':     
                     print(resp_meta_body['name'],resp_meta_body['parent_id'])
                     parent_name_response = get_task_meta_data(resp_meta_body['parent_id'])
                     parent = json.loads(parent_name_response.body.decode(encoding=parent_name_response.charset))
                     response = {
+                        'task_id': task,
                         'state': resp_meta_body['state'],
-                        'name': task.name
-                        
+                         'parent_id': resp_meta_body['parent_id']
                     }
                 else:
                     response = {
+                        'task_id': task,
                         'state': resp_meta_body['state'],
-                        
+                        'parent_id': response_flower_body['parent_id']
                     }
                     
                 response_item.append(response)    
@@ -56,6 +64,13 @@ def get_current_live_root_task():
         else:
             return JSONResponse({'error':'no active tasks'})
 
+
+@fp_router.get("/flower/task_info/")
+def flower_task_info(task_id: str):
+    url = '{}/info/{}'.format(flower_task_api,task_id)
+    response = json.loads(requests.get(url).text)
+    return JSONResponse(response)
+
 @fp_router.get("/form/task_meta_data/")
 def get_task_meta_data(task_id: str):
     if '\"' in task_id[0] and '\"' in task_id[-1]:
@@ -63,8 +78,16 @@ def get_task_meta_data(task_id: str):
         
     task = AsyncResult(task_id, app=current_celery_app)
     state = task.state
+    children = []
     meta_data = task._get_task_meta()
-
+    parent_id = None
+    worker = ""
+    if 'parent_id' in meta_data:
+        parent_id = meta_data['parent_id']
+    if 'children' in meta_data:
+        children = [a.task_id for a in meta_data['children']]
+    if 'worker'  in meta_data:  
+        worker = meta_data['worker']
     if state == 'FAILURE':
         error = str(task.result)
         response = {
@@ -83,7 +106,10 @@ def get_task_meta_data(task_id: str):
             response = {
                 'state': state,
                 'name': task.name,
-                'parent_id': meta_data['parent_id']
+                'parent_id': parent_id,
+                'children': children,
+                'total_children': len(children),
+                'worker': worker
                 
             }
     return JSONResponse(response)
