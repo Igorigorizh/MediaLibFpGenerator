@@ -15,6 +15,10 @@
 	
   <div class="container">
 	
+  <div class="alert alert-info alert-dismissible" id="taskRunAlert" >
+    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+    <strong>Info</strong> Check live long running tasks. 
+  </div>
   <div class="alert alert-warning alert-dismissible" id="taskRunAlert" >
     <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
     <strong>Warning!</strong> Running tasks found. Do not start any more tasks!
@@ -321,7 +325,7 @@
   $(document).ready(function(){
   alert('puk')
   "/form/get_current_root_task/"
-  fetch(`/fp/form/task_progress/?task_id=${task_id}`, {
+  fetch(`/fp/form/get_current_root_task/`, {
       method: 'GET',
     })
 		
@@ -329,8 +333,8 @@
       .then((res) => {
 		if ( 'message' in res){
 			//const taskStatus = res.state;
-			alert('puk druk')
-			$("#taskRunAlert").alert("close");
+			alert(res.message)
+			//$("#taskRunAlert").alert("close");
 		}
 		
 	})
