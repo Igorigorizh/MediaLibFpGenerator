@@ -68,8 +68,9 @@ class Media_FileSystem_Helper_Progress(mfsh):
             # Update final progress to get 100%   
             print('last progress:',self._current_iteration)
             self.progress_recorder.set_progress(self._current_iteration, self._current_iteration,\
-                                                    description=self.progress_recorder_descr)    
-
+                                                    description=self.progress_recorder_descr)
+            self.progress_recorder.task.update_state(state='FS_STATE',
+                meta={'last_value': self._current_iteration})
         return res
 		
     def iterrration_extention_point(self, *args):
@@ -84,6 +85,8 @@ def find_new_music_folder_task(self, *args):
 	mfsh_obj = Media_FileSystem_Helper_Progress()
 	# set progress recorder with ProgressTask.progress -> self.progress
 	mfsh_obj.set_progress_recorder(self.progress,"medialib-job-folder-scan-progress-media_files")
+    self.update_state(state='FS_STATE',
+                meta={'last_value': 0})
 	# call redefined method
 	return mfsh_obj.find_new_music_folder(*args)
 
