@@ -44,32 +44,39 @@ class ProgressTask(Task):
 
 
 class Media_FileSystem_Helper_Progress(mfsh):
-	def __init__(self):
-		super().__init__()
-		self.progress_recorder = None
-		self.progress_recorder_descr = ""
-		self._EXT_CALL_FREQ = 10
+    def __init__(self):
+        super().__init__()
+        self.progress_recorder = None
+        self.progress_recorder_descr = ""
+        self._EXT_CALL_FREQ = 10
 
-	def set_progress_recorder(self,progress_recorder, descr):
-		self.progress_recorder = progress_recorder
-		self.progress_recorder_descr = descr
+    def set_progress_recorder(self,progress_recorder, descr):
+        self.progress_recorder = progress_recorder
+        self.progress_recorder_descr = descr
+        
+    def get_progress(self):
+        return self._current_iteration
 		
-	def find_new_music_folder(self,*args):
-		res = None
-		print('in find_new_music_folder helper progress  args:',args)
-		if self.progress_recorder:
-			self.progress_recorder.set_progress(1, 2, description=self.progress_recorder_descr)
-			resD = super().find_new_music_folder(*args)
-			if 'music_folderL' in resD:
-				res = list(map(lambda x: bytes(x+'/',BASE_ENCODING),resD['music_folderL']))
+    def find_new_music_folder(self,*args):
+        res = None
+        print('in find_new_music_folder helper progress  args:',args)
+        if self.progress_recorder:
+            self.progress_recorder.set_progress(1, 2, description=self.progress_recorder_descr)
+            resD = super().find_new_music_folder(*args)
+            if 'music_folderL' in resD:
+                res = list(map(lambda x: bytes(x+'/',BASE_ENCODING),resD['music_folderL']))
+            # Update final progress to get 100%   
+            print('last progress:',self._current_iteration)
+            self.progress_recorder.set_progress(self._current_iteration, self._current_iteration,\
+                                                    description=self.progress_recorder_descr)    
 
-		return res
+        return res
 		
-	def iterrration_extention_point(self, *args):
-		""" iterrration_extention_point redefine with celery progress_recorder"""
-		if self._current_iteration%self._EXT_CALL_FREQ == 0 and self.progress_recorder:
-			#print('in iterrator:',self.progress_recorder,id(self.progress_recorder),self._current_iteration)
-			self.progress_recorder.set_progress(self._current_iteration, self._current_iteration+1, description=self.progress_recorder_descr)	
+    def iterrration_extention_point(self, *args):
+        """ iterrration_extention_point redefine with celery progress_recorder"""
+        if self._current_iteration%self._EXT_CALL_FREQ == 0 and self.progress_recorder:
+            #print('in iterrator:',self.progress_recorder,id(self.progress_recorder),self._current_iteration)
+            self.progress_recorder.set_progress(self._current_iteration, self._current_iteration+1, description=self.progress_recorder_descr)	
 
 @shared_task(base=ProgressTask, name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
 def find_new_music_folder_task(self, *args):
