@@ -81,14 +81,13 @@ class Media_FileSystem_Helper_Progress(mfsh):
 
 @shared_task(base=ProgressTask, name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
 def find_new_music_folder_task(self, *args):
-	# get instance of Media_FileSystem_Helper_Progress
-	mfsh_obj = Media_FileSystem_Helper_Progress()
-	# set progress recorder with ProgressTask.progress -> self.progress
-	mfsh_obj.set_progress_recorder(self.progress,"medialib-job-folder-scan-progress-media_files")
-    self.update_state(state='FS_STATE',
-                meta={'last_value': 0})
-	# call redefined method
-	return mfsh_obj.find_new_music_folder(*args)
+    # get instance of Media_FileSystem_Helper_Progress
+    mfsh_obj = Media_FileSystem_Helper_Progress()
+    # set progress recorder with ProgressTask.progress -> self.progress
+    mfsh_obj.set_progress_recorder(self.progress,"medialib-job-folder-scan-progress-media_files")
+    self.update_state(state='FS_STATE', meta={'last_value': 0})
+    # call redefined method
+    return mfsh_obj.find_new_music_folder(*args)
 
 
 @shared_task(name="tasks.callback_acoustID_request")
