@@ -63,7 +63,7 @@ def get_current_live_root_task():
             
             return JSONResponse(response_item)
         else:
-            return JSONResponse({'error':'no active tasks'})
+            return JSONResponse({'message':'no active tasks'})
 
 
 @fp_router.get("/flower/task_info/")
