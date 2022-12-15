@@ -71,11 +71,12 @@ class Media_FileSystem_Helper_Progress(mfsh):
                                                     description=self.progress_recorder_descr)
             self.progress_recorder.task.update_state(state='FS_STATE',
                 meta={'last_value': self._current_iteration})
+            print('task type:',type(self.progress_recorder.task))    
                 
-            meta = self.progress_recorder.task._get_task_meta()
-            print('meta:',meta.keys())
-            meta.update({'last_value_1': self._current_iteration})
-            self.progress_recorder.task.update_state(meta)
+            #meta = self.progress_recorder.task._get_task_meta()
+            #print('meta:',meta.keys())
+            #meta.update({'last_value_1': self._current_iteration})
+            #self.progress_recorder.task.update_state(meta)
         return res
 		
     def iterrration_extention_point(self, *args):
