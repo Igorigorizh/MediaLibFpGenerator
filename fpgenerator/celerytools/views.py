@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import json
 import urllib.parse
+import celery_progress.backend
 
 from . import fp_router
 from .schemas import FolderRequestsBody
@@ -68,8 +69,18 @@ def get_current_live_root_task():
 @fp_router.get("/flower/task_info/")
 def flower_task_info(task_id: str):
     url = '{}/info/{}'.format(flower_task_api,task_id)
-    response = json.loads(requests.get(url).text)
+    response_text=requests.get(url).text
+
+    if response_text:
+        response = json.loads(response_text)
+    else:
+        response = {
+            'error': 'No data in response',
+        }
+    
     return JSONResponse(response)
+    
+        
 
 @fp_router.get("/form/task_meta_data/")
 def get_task_meta_data(task_id: str):
@@ -134,7 +145,12 @@ def form_fp_process_get(request: Request):
     return templates.TemplateResponse("form.html", {"request": request})
    
 @fp_router.post("/form/stop")
-def stop_fp_process():
+def stop_fp_process(task_id: str):
+    if '\"' in task_id[0] and '\"' in task_id[-1]:
+        task_id = task_id[1:-1]
+        
+    task = AsyncResult(task_id, app=current_celery_app)
+    
     return JSONResponse({"stopped": current_celery_app.control.purge()})
     
 @fp_router.post("/form/")
@@ -156,7 +172,7 @@ def form_fp_process_start(folder_req_body: FolderRequestsBody):
 def fp_test():
     task = task_test_logger.delay()
     return JSONResponse({"message": "send logger message task to Celery successfully","task_id": task.task_id})
-    
+ 
 @fp_router.get("/form/task_status/")
 def task_status(task_id: str):
 
@@ -173,7 +189,32 @@ def task_status(task_id: str):
         }
     else:
         response = {
+            'state': state
+        }
+    return JSONResponse(response)
+
+ 
+@fp_router.get("/form/task_progress/")
+def task_progress(task_id: str):
+
+    if '\"' in task_id[0] and '\"' in task_id[-1]:
+        task_id = task_id[1:-1]
+    task = AsyncResult(task_id, app=current_celery_app)
+    state = task.state
+    res = celery_progress.backend.Progress(task).get_info()
+
+    if state == 'FAILURE':
+        error = str(task.result)
+        response = {
             'state': state,
+            'error': error,
+        }
+    else:
+        response = {
+            'state': state,
+            'progress': res['progress']['percent'],
+            'total': res['progress']['total'],
+            'succeed': res['progress']['current']
         }
     return JSONResponse(response)
     
@@ -225,7 +266,7 @@ def get_sucessor(task_id: str):
             }        
     return JSONResponse(response)        
     
-@fp_router.get("/form/task_progress/")    
+@fp_router.get("/form/task_subt_progress/")    
 def get_fp_overall_progress(task_id: str):
     progress = 0
     task_items = []

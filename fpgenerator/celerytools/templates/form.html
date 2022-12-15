@@ -7,21 +7,29 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.0/css/bootstrap.min.css"
         integrity="sha512-XWTTruHZEYJsxV3W/lSXG1n3Q39YIWOstqvmFsdNEEQfHoZ6vm6E9GK2OrF6DSJSpIbRbi+Nn0WDPID9O7xB2Q=="
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>	
 </head>
 <body>
 	
+
 	
   <div class="container">
+	
+  <div class="alert alert-warning alert-dismissible" id="taskRunAlert" >
+    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+    <strong>Warning!</strong> Running tasks found. Do not start any more tasks!
+  </div>
+  
     <div class="row">
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-10">
         <form id="your-form" action="/submit">
 
-          <div class="mb-3">
+          <div class="mb-5">
             <label for="path" class="form-label">Root folder</label>
             <input type="text" class="form-control" id="path" name="path">
             <div class="form-check mb-3">
 				  <label class="form-check-label">
-					<input class="form-check-input" type="checkbox" id="fp_flag" name="fp_flag"> with FP
+					<input class="form-check-input" type="checkbox" id="fp_flag" name="fp_flag"> Generate FP
 				  </label>
 			</div>
 			
@@ -44,9 +52,18 @@
 	  </div>
 	  <div class="row">
 	  <div class="col-13 col-md-5">
+	  <h10>Folders scanning</h10>
+	  <div class="progress">
+		  <div class="progress-bar folder" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+		</div>
+	  </div>
+	  </div>
+	  <BR> <BR>
+	  <div class="row">
+	  <div class="col-13 col-md-5">
 	  <h10>Overall albums progress</h10>
 	  <div class="progress">
-		  <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+		  <div class="progress-bar proc" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
 		</div>
 	  </div>
 	  </div>
@@ -69,10 +86,10 @@
 		
 		if ( 'task_id' in res ){
 		 console.log(res)	
-		 updateProgressBar(bar, res.task_id)
+		 updateProgressBar_proc(bar, res.task_id)
 		}
 		
-		if ( 'error' in res ){
+		if ( ('error' in res) && ( 'task_id' in res ) ){
 		 console.log(res.error)	
 		 error_count+=1
 		 if ( error_count < 10 ){
@@ -91,8 +108,19 @@
 	}
 	
 	
-	function updateProgressBar(bar, task_id) {
-    fetch(`/fp/form/task_progress/?task_id=${task_id}`, {
+	function updateProgressBar_folder(bar, progress) {
+    
+		const taskProgress = progress.progress;
+		const succeed = progress.succeed;
+		const total = progress.total;
+		console.log(taskProgress);
+		bar.style.width=taskProgress+"%";          
+        bar.innerHTML=taskProgress+"%"+" ("+succeed+":"+total+")";
+		
+	}
+	
+	function updateProgressBar_proc(bar, task_id) {
+    fetch(`/fp/form/task_subt_progress/?task_id=${task_id}`, {
       method: 'GET',
     })
 	
@@ -104,7 +132,7 @@
 		 error_count+=1
 		 if ( error_count < 10 ){
 		 setTimeout(function() {
-            updateProgressBar(bar, task_id);
+            updateProgressBar_proc(bar, task_id);
           }, 5000);
 		  } else {
 		 
@@ -121,7 +149,7 @@
         
       
 	   setTimeout(function() {
-            updateProgressBar(bar, task_id);
+            updateProgressBar_proc(bar, task_id);
           }, 10000);
 		
 	}
@@ -130,8 +158,12 @@
 	
 
     function updateProgress(yourForm, task_id, btnHtml) {
-	const bar = document.querySelector('.progress-bar');
-    fetch(`/fp/form/task_status/?task_id=${task_id}`, {
+	//Udates both progress bars
+	//Bar_folder dirict from here
+	//Bar_proc via getSucessor
+	const bar = document.querySelector('.progress-bar.proc');
+	const bar_folder = document.querySelector('.progress-bar.folder');
+    fetch(`/fp/form/task_progress/?task_id=${task_id}`, {
       method: 'GET',
     })
 		
@@ -151,11 +183,11 @@
             // display error message on the form
             msg.innerHTML = res.error;
           }
-
-          submitBtn.disabled = false;
+		  submitBtn.disabled = false;
           submitBtn.innerHTML = btnHtml;
         } else {
-          // the task is still running
+          // the task is still running === PENDING
+		  updateProgressBar_folder(bar_folder, res)
           setTimeout(function() {
             updateProgress(yourForm, task_id, btnHtml);
           }, 3000);
@@ -185,23 +217,32 @@
 
   document.addEventListener("DOMContentLoaded", function() {
     const yourForm = document.getElementById("your-form");
-	const bar = document.querySelector('.progress-bar');   
     yourForm.addEventListener("submit", function(event) {
+	  error_count = 0;
       event.preventDefault();
       const submitBtn = yourForm.querySelector('button[type="submit"]');
+	  //const stopBtn = yourForm.querySelector('button[type="stop"]');
       const btnHtml = submitBtn.innerHTML;
-      const spinnerHtml = 'Processing...';
-	  error_count = 0;		
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = spinnerHtml;
-
-      const msg = yourForm.querySelector('#messages');
-      msg.innerHTML = '';
+      
 
       // Get all field data from the form
       let data = new FormData(yourForm);
       // Convert to an object
       let formData = serialize(data);
+
+	  if ( !formData.path){
+		
+		console.error('Error:', "Empty path")
+		return
+		}
+		
+	 const spinnerHtml = 'Processing...';
+	  		
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = spinnerHtml;
+
+      const msg = yourForm.querySelector('#messages');
+      msg.innerHTML = '';	
 
       fetch('/fp/form/', {
         method: 'POST',
@@ -216,7 +257,6 @@
           // after we get Celery task id, we start polling
           const task_id = JSON.stringify(res.task_id);
           updateProgress(yourForm, task_id, btnHtml);
-		  //updateProgressBar(bar, task_id, btnHtml)
           console.log(res);
         })
         .catch((error) => {
@@ -225,6 +265,67 @@
         );
     });
   });
+  
+  document.addEventListener("DOMContentLoaded", function() {
+    const yourForm = document.getElementById("your-form");
+    yourForm.addEventListener("stop", function(event) {
+	  error_count = 0;
+      event.preventDefault();
+      //const submitBtn = yourForm.querySelector('button[type="submit"]');
+	  const stopBtn = yourForm.querySelector('button[type="stop"]');
+      const btnHtml = submitBtn.innerHTML;
+      
+
+      // Get all field data from the form
+      let data = new FormData(yourForm);
+      // Convert to an object
+      let formData = serialize(data);
+
+	  if ( !formData.path){
+		
+		console.error('Error:', "Empty path")
+		return
+		}
+		
+	 const spinnerHtml = 'Processing...';
+	  		
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = spinnerHtml;
+
+      const msg = yourForm.querySelector('#messages');
+      msg.innerHTML = '';	
+		
+	// request stop 	
+      fetch('/fp/form/stop', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+		  
+        },
+        body: JSON.stringify(formData),
+      })
+        .then(response => response.json())
+        .then((res) => {
+          // after we get Celery task id, we start polling
+          const task_id = JSON.stringify(res.task_id);
+          updateProgress(yourForm, task_id, btnHtml);
+          console.log(res);
+        })
+        .catch((error) => {
+            console.error('Error:', error)
+          }
+        );
+    });
+  });
+  
+  $(document).ready(function(){
+  alert('puk')
+  $(".close").click(function(){
+	alert('puk druk')
+    $("#taskRunAlert").alert("close");
+  });
+});
+  
 </script>
 
 </body>
