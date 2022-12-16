@@ -203,22 +203,27 @@ def task_progress(task_id: str):
     state = task.state
     res = celery_progress.backend.Progress(task).get_info()
     progress = res
-    #res2 = celery_progress.backend.Progress(task).result._get_task_meta()['result']
-    print(res2)
-    
+        
     if state == 'FAILURE':
         error = str(task.result)
         response = {
             'state': state,
             'error': error,
         }
+    elif state == 'SUCCESS':   
+        response = {
+                'state': state,
+                'progress': res['progress']['percent'],
+                'total': res['progress']['total'],
+                'succeed': res['progress']['current'],
+                'succeed_final':res['result']['total_proceed']
+            }
     else:
         response = {
             'state': state,
             'progress': res['progress']['percent'],
             'total': res['progress']['total'],
             'succeed': res['progress']['current'],
-            'succeed_final':res['result']['total_proceed']
         }
     return JSONResponse(response)
     
