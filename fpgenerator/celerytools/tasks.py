@@ -58,31 +58,24 @@ class Media_FileSystem_Helper_Progress(mfsh):
         return self._current_iteration
 		
     def find_new_music_folder(self,*args):
-        res = None
+        result = None
         print('in find_new_music_folder helper progress  args:',args)
         if self.progress_recorder:
             self.progress_recorder.set_progress(1, 2, description=self.progress_recorder_descr)
+            # here we call original parent find_new_music_folder
             resD = super().find_new_music_folder(*args)
+            
             if 'music_folderL' in resD:
-                res = list(map(lambda x: bytes(x+'/',BASE_ENCODING),resD['music_folderL']))
+                result = list(map(lambda x: bytes(x+'/',BASE_ENCODING),resD['music_folderL']))
             # Update final progress to get 100%   
             print('last progress:',self._current_iteration)
             self.progress_recorder.set_progress(self._current_iteration, self._current_iteration,\
                                                     description=self.progress_recorder_descr)
-            self.progress_recorder.task.update_state(state='FS_STATE',
-                meta={'last_value': self._current_iteration})
-            print('task type:',type(self.progress_recorder.task),dir(self.progress_recorder.task))    
-                
-            #meta = self.progress_recorder.task._get_task_meta()
-            #print('meta:',meta.keys())
-            #meta.update({'last_value_1': self._current_iteration})
-            #self.progress_recorder.task.update_state(meta)
-        return res
+        return result
 		
     def iterrration_extention_point(self, *args):
         """ iterrration_extention_point redefine with celery progress_recorder"""
         if self._current_iteration%self._EXT_CALL_FREQ == 0 and self.progress_recorder:
-            #print('in iterrator:',self.progress_recorder,id(self.progress_recorder),self._current_iteration)
             self.progress_recorder.set_progress(self._current_iteration, self._current_iteration+1, description=self.progress_recorder_descr)	
 
 @shared_task(base=ProgressTask, name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
@@ -95,8 +88,8 @@ def find_new_music_folder_task(self, *args):
     if not self.request.called_directly:
         self.update_state(state="MYSTATE", meta=22)
     # call redefined method
-    return mfsh_obj.find_new_music_folder(*args)
-
+    return {'result': mfsh_obj.find_new_music_folder(*args), 'total_proceed': mfsh_obj.get_progress()}
+    
 
 @shared_task(name="tasks.callback_acoustID_request")
 def callback_acoustID_request(result):
@@ -131,7 +124,7 @@ def callback_FP_gen(result,*args):
 	# Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задач.\
 	# Ниже только формируется план
 	# scheduler.get_fp_overall_progress(root_task=res.children[0]), где res = get_async_res_via_id('592027a3-2d10-4f27-934e-fc2f6b67dc1e')
-	folderL = result
+	folderL = result['result']
 	print()
 	print('args in callback_FP_gen:',args)
 	
