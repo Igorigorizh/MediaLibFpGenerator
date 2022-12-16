@@ -3,26 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Celery example</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.0/css/bootstrap.min.css"
-        integrity="sha512-XWTTruHZEYJsxV3W/lSXG1n3Q39YIWOstqvmFsdNEEQfHoZ6vm6E9GK2OrF6DSJSpIbRbi+Nn0WDPID9O7xB2Q=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>	
 </head>
 <body>
 	
 
 	
-  <div class="container">
+  
+  
 	
-  <div class="alert alert-info alert-dismissible" id="taskRunAlert" >
-    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+<div class="container">	
+  <div class="alert alert-info alert-dismissible" id="taskRunAlertInfo" >
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     <strong>Info</strong> Check live long running tasks. 
   </div>
-  <div class="alert alert-warning alert-dismissible" id="taskRunAlert" >
-    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+  
+  
+  <div class="alert alert-warning alert-dismissible" id="taskRunAlertWarn" >
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     <strong>Warning!</strong> Running tasks found. Do not start any more tasks!
   </div>
+  
+
+  
   
     <div class="row">
       <div class="col-12 col-md-10">
@@ -116,13 +123,10 @@
 		const succeed = progress.succeed;
 		const total = progress.total;
 		const taskProgress = progress.progress;
-		//alert(progress.state)
 		if (progress.state === 'SUCCESS') {
 			const succeed = progress.succeed_final;
 			const total = progress.succeed_final;
 		}
-		
-		console.log(taskProgress);
 		bar.style.width=taskProgress+"%";          
         bar.innerHTML=taskProgress+"%"+" ("+succeed+":"+total+")";
 		
@@ -330,7 +334,7 @@
   });
   
   $(document).ready(function(){
-  alert('puk')
+  
   "/form/get_current_root_task/"
   fetch(`/fp/form/get_current_root_task/`, {
       method: 'GET',
@@ -338,11 +342,20 @@
 		
       .then(response => response.json())
       .then((res) => {
-		if ( 'message' in res){
+		if ( ('message' in res )){
+			$("#taskRunAlertInfo").alert("close");
+			$("#taskRunAlertWarn").alert("close");
 			//const taskStatus = res.state;
-			alert(res.message)
-			//$("#taskRunAlert").alert("close");
+			
 		}
+		
+		if ( ('root_id' in res )){
+			const taskStatus = res.root_id;
+			$("#taskRunAlertInfo").alert("close");
+			alert(res.root_id)
+			
+		}
+		
 		
 	})
         .catch((error) => {
@@ -353,7 +366,7 @@
 		
   $(".close").click(function(){
 	alert('puk druk')
-    $("#taskRunAlert").alert("close");
+    $("#taskRunAlertInfo").alert("close");
   });
 });
   
