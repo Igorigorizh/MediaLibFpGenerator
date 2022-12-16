@@ -33,6 +33,7 @@ def get_current_live_root_task():
     resp_body = json.loads(response.body.decode(encoding=response.charset))
     print('resp_body:',resp_body)
     response_item = []
+    parent_tasks = []
     if resp_body:
         tasks = resp_body['tasks']
 
@@ -47,21 +48,37 @@ def get_current_live_root_task():
                     print(resp_meta_body['name'],resp_meta_body['parent_id'])
                     parent_name_response = get_task_meta_data(resp_meta_body['parent_id'])
                     parent = json.loads(parent_name_response.body.decode(encoding=parent_name_response.charset))
+                    parent_id = resp_meta_body['parent_id']
+                    parent_tasks.append(parent_id)
                     response = {
                         'task_id': task,
                         'state': resp_meta_body['state'],
-                         'parent_id': resp_meta_body['parent_id']
+                        'parent_id': parent_id
                     }
                 else:
+                    
+                    if 'parent_id' in resp_meta_body:
+                        parent_name_response = get_task_meta_data(resp_meta_body['parent_id'])
+                        parent = json.loads(parent_name_response.body.decode(encoding=parent_name_response.charset))
+                        parent_id = resp_meta_body['parent_id']
+                    else:
+                        print("------------********---------->",resp_meta_body)
+                    parent_tasks.append(parent_id)
                     response = {
                         'task_id': task,
                         'state': resp_meta_body['state'],
-                        'parent_id': response_flower_body['parent_id']
+                        'parent_id': response_flower_body['parent_id'],
+                        'name': parent 
                     }
-                    
-                response_item.append(response)    
-            
-            return JSONResponse(response_item)
+                
+                response_item.append(response) 
+            if parent_tasks:    
+                if len(set(parent_tasks)) == 1:
+                    return JSONResponse({'root_id': parent_tasks[0]})
+                else:
+                    return JSONResponse({'roots': parent_tasks})
+            else:
+                return JSONResponse(response_item)
         else:
             return JSONResponse({'message':'no active tasks'})
 
