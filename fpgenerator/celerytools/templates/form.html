@@ -113,10 +113,16 @@
 	
 	
 	function updateProgressBar_folder(bar, progress) {
-    
-		const taskProgress = progress.progress;
 		const succeed = progress.succeed;
 		const total = progress.total;
+		const taskProgress = progress.progress;
+		//alert(progress.state)
+		if (progress.state === 'SUCCESS') {
+			alert(progress.succeed)
+			const succeed = progress.succeed_final;
+			const total = progress.succeed_final;
+		}
+		
 		console.log(taskProgress);
 		bar.style.width=taskProgress+"%";          
         bar.innerHTML=taskProgress+"%"+" ("+succeed+":"+total+")";
@@ -144,6 +150,7 @@
 		}
 		}
 		const taskProgress = res.progress;
+
 		const succeed = res.succeed;
 		const total = res.total;
 		console.log(taskProgress);
@@ -154,7 +161,7 @@
       
 	   setTimeout(function() {
             updateProgressBar_proc(bar, task_id);
-          }, 10000);
+          }, 5000);
 		
 	}
 	)
@@ -181,6 +188,7 @@
           const submitBtn = yourForm.querySelector('button[type="submit"]');
 
           if (taskStatus === 'SUCCESS') {
+			updateProgressBar_folder(bar_folder, res)
             msg.innerHTML = 'root job succeeded';
 			getSucessor(bar, task_id)
           } else if (taskStatus === 'FAILURE') {
@@ -194,7 +202,7 @@
 		  updateProgressBar_folder(bar_folder, res)
           setTimeout(function() {
             updateProgress(yourForm, task_id, btnHtml);
-          }, 3000);
+          }, 1000);
         }
       })
       .catch((error) => {
