@@ -76,7 +76,17 @@ class Media_FileSystem_Helper_Progress(mfsh):
     def iterrration_extention_point(self, *args):
         """ iterrration_extention_point redefine with celery progress_recorder"""
         if self._current_iteration%self._EXT_CALL_FREQ == 0 and self.progress_recorder:
-            self.progress_recorder.set_progress(self._current_iteration, self._current_iteration+10, description=self.progress_recorder_descr)	
+            if self._current_iteration > 200:
+                total = self._current_iteration+100
+            elif self._current_iteration > 1200:   
+                total = self._current_iteration+500
+            elif self._current_iteration > 2200:   
+                total = self._current_iteration+1000
+            else:
+                total = self._current_iteration+10
+                
+                
+            self.progress_recorder.set_progress(self._current_iteration, total, description=self.progress_recorder_descr)	
 
 @shared_task(base=ProgressTask, name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
 def find_new_music_folder_task(self, *args):
