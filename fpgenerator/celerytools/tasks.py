@@ -93,7 +93,7 @@ def find_new_music_folder_task(self, *args):
     mfsh_obj.set_progress_recorder(self.progress,"medialib-job-folder-scan-progress-media_files")
     self.update_state(state='FS_STATE', meta={'last_value': 0})
     if not self.request.called_directly:
-        self.update_state(state=states.SUCCESS, meta=22)
+        self.update_state(state="MYSTATE", meta=22)
     # call redefined method
     return mfsh_obj.find_new_music_folder(*args)
 
