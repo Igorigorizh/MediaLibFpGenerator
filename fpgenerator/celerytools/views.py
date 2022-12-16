@@ -215,7 +215,7 @@ def task_progress(task_id: str):
                 'state': state,
                 'progress': res['progress']['percent'],
                 'total': res['progress']['total'],
-                'succeed': res['progress']['current'],
+                'succeed': res['result']['total_proceed'],
                 'succeed_final':res['result']['total_proceed']
             }
     else:
