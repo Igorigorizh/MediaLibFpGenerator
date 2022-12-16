@@ -71,7 +71,7 @@ class Media_FileSystem_Helper_Progress(mfsh):
                                                     description=self.progress_recorder_descr)
             self.progress_recorder.task.update_state(state='FS_STATE',
                 meta={'last_value': self._current_iteration})
-            print('task type:',type(self.progress_recorder.task))    
+            print('task type:',type(self.progress_recorder.task),dir(self.progress_recorder.task))    
                 
             #meta = self.progress_recorder.task._get_task_meta()
             #print('meta:',meta.keys())
@@ -92,6 +92,8 @@ def find_new_music_folder_task(self, *args):
     # set progress recorder with ProgressTask.progress -> self.progress
     mfsh_obj.set_progress_recorder(self.progress,"medialib-job-folder-scan-progress-media_files")
     self.update_state(state='FS_STATE', meta={'last_value': 0})
+    if not self.request.called_directly:
+        self.update_state(state=states.SUCCESS, meta=22)
     # call redefined method
     return mfsh_obj.find_new_music_folder(*args)
 
