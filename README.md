@@ -1,6 +1,6 @@
 # MediaLibFpGenerator
 acoustId fingerprints generator and meta data retriever reuses base legacy functionality from [MediaLibManager](https://github.com/Igorigorizh/MediaLibManager) repo.
-As a [MediaLibManager](https://github.com/Igorigorizh/MediaLibManager) fpgenerator service support many audio formats including single CUE images, multy tracks CUE images, hi-res flac and dsf.
+As a [MediaLibManager](https://github.com/Igorigorizh/MediaLibManager) fpgenerator service support many audio formats including single CUE images, multy tracks CUE images, hi-res flac, dsf, mp3 and others.
 
 When necessary single CUE image is splitted into tracks via ffmpeg decoder to extract single track audio data for the next finger print processing.
 
