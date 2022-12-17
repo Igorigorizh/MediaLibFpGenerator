@@ -13,7 +13,7 @@ Redis is used as a message broker and partially as a result backend.
 
 fpgenerator Service is Dockerized and has four services inside:
 1. fpgenerator - fingerprint process generation with the async celery tasks
-2. fp_web - FastAPI web application to trigger, monitor and control generation process
+2. fp_web - FastAPI/Bootstrap5 web application to trigger, monitor and control generation process
 3. Redis  - broker and temp data storage
 4. Flower - celery tasks dashboard to monitor celery jobs execution
 
