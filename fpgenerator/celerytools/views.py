@@ -220,14 +220,39 @@ def task_progress(task_id: str):
     state = task.state
     res = celery_progress.backend.Progress(task).get_info()
     progress = res
-        
+    print('res:',res)
+    
     if state == 'FAILURE':
-        error = str(task.result)
+    
         response = {
             'state': state,
-            'error': error,
+            'error': error
         }
     elif state == 'SUCCESS':   
+        if 'error' in res['result'] or not res['result']:
+            if 'error' in task.result:
+                error = str(task.result)
+            else:
+                error = 'Undefined error 1'
+            response = {
+                'state': state,
+                'error': error,
+            }    
+            return JSONResponse(response)
+            
+        if 'result' in res['result'] and not res['result']['result']:
+            print(res['result']['result'], type(res['result']['result']))
+            if 'error' in task.result:
+                error = str(task.result)
+            else:
+                error = 'Undefined error 2'
+            response = {
+                'state': state,
+                'error': error
+            }    
+            return JSONResponse(response)    
+        
+       
         response = {
                 'state': state,
                 'progress': res['progress']['percent'],
