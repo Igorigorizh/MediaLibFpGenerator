@@ -66,7 +66,12 @@ class Media_FileSystem_Helper_Progress(mfsh):
             resD = super().find_new_music_folder(*args)
             
             if 'music_folderL' in resD:
-                result = list(map(lambda x: bytes(x+'/',BASE_ENCODING),resD['music_folderL']))
+                if not resD['music_folderL']:
+                    result = {'error': "No audio data found"}    
+                else:    
+                    result = list(map(lambda x: bytes(x+'/',BASE_ENCODING),resD['music_folderL']))
+            if 'error' in resD:
+                result = {'error': resD['error']}    
             # Update final progress to get 100%   
             print('last progress:',self._current_iteration)
             self.progress_recorder.set_progress(self._current_iteration, self._current_iteration,\
@@ -94,9 +99,6 @@ def find_new_music_folder_task(self, *args):
     mfsh_obj = Media_FileSystem_Helper_Progress()
     # set progress recorder with ProgressTask.progress -> self.progress
     mfsh_obj.set_progress_recorder(self.progress,"medialib-job-folder-scan-progress-media_files")
-    self.update_state(state='FS_STATE', meta={'last_value': 0})
-    if not self.request.called_directly:
-        self.update_state(state="MYSTATE", meta=22)
     # call redefined method
     return {'result': mfsh_obj.find_new_music_folder(*args), 'total_proceed': mfsh_obj.get_progress()}
     
