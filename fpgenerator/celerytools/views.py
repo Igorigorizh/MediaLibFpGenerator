@@ -34,6 +34,7 @@ def get_current_live_root_task():
     print('resp_body:',resp_body)
     response_item = []
     parent_tasks = []
+    parent_name = ''
     if resp_body:
         tasks = resp_body['tasks']
 
@@ -53,30 +54,38 @@ def get_current_live_root_task():
                     response = {
                         'task_id': task,
                         'state': resp_meta_body['state'],
-                        'parent_id': parent_id
+                        'parent_id': parent_id,
+                        'name': parent['name'] 
+                        
                     }
-                else:
+                elif resp_meta_body['state'] == 'PENDING':
                     
-                    if 'parent_id' in resp_meta_body:
-                        parent_name_response = get_task_meta_data(resp_meta_body['parent_id'])
+                    if 'parent_id' in response_flower_body:
+                        parent_name_response = get_task_meta_data(response_flower_body['parent_id'])
                         parent = json.loads(parent_name_response.body.decode(encoding=parent_name_response.charset))
-                        parent_id = resp_meta_body['parent_id']
+                        parent_id = response_flower_body['parent_id']
+                        parent_tasks.append(parent_id)
+                        response = {
+                            'task_id': task,
+                            'state': response_flower_body['state'],
+                            'parent_id': response_flower_body['parent_id'],
+                            'name': parent['name']
+                        }
                     else:
                         print("------------********---------->",resp_meta_body)
-                    parent_tasks.append(parent_id)
-                    response = {
-                        'task_id': task,
-                        'state': resp_meta_body['state'],
-                        'parent_id': response_flower_body['parent_id'],
-                        'name': parent 
-                    }
+                        
+                        response = {
+                            'task_id': task,
+                            'state': resp_meta_body['state'],
+                            'message': "No parents found"
+                        }
                 
                 response_item.append(response) 
             if parent_tasks:    
                 if len(set(parent_tasks)) == 1:
-                    return JSONResponse({'root_id': parent_tasks[0]})
+                    return JSONResponse({'root_id': parent_tasks[0], 'root_name': parent['name']})
                 else:
-                    return JSONResponse({'roots': parent_tasks})
+                    return JSONResponse({'root_id': parent_tasks[0][0], 'root_name': parent['name']})
             else:
                 return JSONResponse(response_item)
         else:
@@ -150,10 +159,12 @@ def find_live_jobs():
     # reserved():  enqueued tasks - usually revoked by purge() above
     tasks = []
     for queues in (i.active(), i.reserved(), i.scheduled()):
-        for task_list in queues.values():
-            for task in task_list:
-                task_id = task.get("request", {}).get("id", None) or task.get("id", None)
-                tasks.append(task_id)
+        if queues:
+            for task_list in queues.values():
+                for task in task_list:
+                    task_id = task.get("request", {}).get("id", None) or task.get("id", None)
+                    tasks.append(task_id)
+           
           
     return JSONResponse({"tasks": tasks})            
 
@@ -228,38 +239,47 @@ def task_progress(task_id: str):
             'state': state,
             'error': error
         }
-    elif state == 'SUCCESS':   
-        if 'error' in res['result'] or not res['result']:
-            if 'error' in task.result:
-                error = str(task.result)
-            else:
-                error = 'Undefined error 1'
-            response = {
-                'state': state,
-                'error': error,
-            }    
-            return JSONResponse(response)
-            
-        if 'result' in res['result'] and not res['result']['result']:
-            print(res['result']['result'], type(res['result']['result']))
-            if 'error' in task.result:
-                error = str(task.result)
-            else:
-                error = 'Undefined error 2'
-            response = {
-                'state': state,
-                'error': error
-            }    
-            return JSONResponse(response)    
+    elif state == 'SUCCESS':
+        if res['result']:
+            if 'error' in res['result']:
+                error = res['result']['error']
+
+                response = {
+                    'state': state,
+                    'error': error,
+                    'progress': res['progress']['percent'],
+                    'total': res['result']['total_proceed'],
+                    'succeed': res['result']['total_proceed']
+                }    
+                return JSONResponse(response)
+        
+            if 'result' in res['result']:
+
+                if 'error' in res['result']['result']:
+                    error = str(res['result']['result']['error'])
+                    response = {
+                        'state': state,
+                        'error': error,
+                        'progress': res['progress']['percent'],
+                        'total': res['result']['total_proceed'],
+                        'succeed': res['result']['total_proceed']
+                    }    
+                    return JSONResponse(response)    
         
        
-        response = {
-                'state': state,
-                'progress': res['progress']['percent'],
-                'total': res['result']['total_proceed'],
-                'succeed': res['result']['total_proceed'],
-                'succeed_final':res['result']['total_proceed']
-            }
+            response = {
+                    'state': state,
+                    'progress': res['progress']['percent'],
+                    'total': res['result']['total_proceed'],
+                    'succeed': res['result']['total_proceed'],
+                    'succeed_final':res['result']['total_proceed']
+                }
+        else:
+            response = {
+                    'state': state,
+                    'progress': res['progress']['percent']
+                }
+            
     else:
         response = {
             'state': state,
