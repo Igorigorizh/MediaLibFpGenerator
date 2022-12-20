@@ -164,7 +164,10 @@
 			console.log(taskProgress);
 			bar.style.width=taskProgress+"%";          
 			bar.innerHTML=taskProgress+"%"+" ("+succeed+":"+total+")";
-			if(taskProgress==100) {return}
+			if(taskProgress==100) {
+				control_submit_buttn('enable')
+				return
+				}
 		  
 		   setTimeout(function() {
 				updateProgressBar_proc(bar, task_id);
@@ -286,6 +289,46 @@
     });
   });
   
+  function get_task_args(task_id){
+	 fetch(`/fp/flower/task_info/?task_id=${task_id}`, {
+      method: 'GET',
+    }) 
+	
+	  .then(response => response.json())
+      .then((res) => {
+		if ( ('args' in res )){
+			$('#path').val(res.args.slice(1,-1).split(",")[0].slice(2,-2))
+			return;
+		}
+	})
+        .catch((error) => {
+            console.error('Error:', error)
+          }
+        );
+ }  
+  
+  function get_FP_gen_parent(task_id){
+	 fetch(`/fp/form/task_meta_data/?task_id=${task_id}`, {
+      method: 'GET',
+    }) 
+	
+	  .then(response => response.json())
+      .then((res) => {
+		if ( 'parent_id' in res ){
+			get_task_args(res.parent_id)
+		}
+		
+	})
+        .catch((error) => {
+            console.error('Error:', error)
+          }
+        );
+	
+	
+  }
+
+  
+  
   function control_submit_buttn(param){
 	  const yourForm = document.getElementById("your-form");
 	  const submitBtn = yourForm.querySelector('button[type="submit"]');
@@ -295,10 +338,12 @@
 	  if (param === 'disable'){
 		  const spinnerHtml = 'Processing...';
 		  submitBtn.disabled = true;
+		  $('#path').prop("readonly", true)
 	  }
 	  
 	  if (param === 'enable'){
 		submitBtn.disabled = false;
+		$('#path').prop("readonly", false)
 	  }
 	  submitBtn.innerHTML = spinnerHtml;
 	  
@@ -356,6 +401,7 @@
     });
   });
   
+  
   $(document).ready(function(){
 	control_submit_buttn('disable')
 	fetch(`/fp/form/get_current_root_task/`, {
@@ -365,8 +411,11 @@
       .then(response => response.json())
       .then((res) => {
 		if ( ('message' in res )){
+			if (res.message == "no active tasks"){
 			$("#taskRunAlertInfo").alert("close");
 			$("#taskRunAlertWarn").alert("close");
+			control_submit_buttn('enable')
+			}
 		}
 		
 		if ( ('root_id' in res )){
@@ -375,6 +424,8 @@
 				$("#taskRunAlertInfo").alert("close");	
 				const taskStatus = res.root_id;
 				const bar = document.querySelector('.progress-bar.proc');
+				$('#fp_flag').prop('checked', true)
+				get_FP_gen_parent(res.root_id)
 				updateProgressBar_proc(bar, res.root_id,);
 			}	
 		}
