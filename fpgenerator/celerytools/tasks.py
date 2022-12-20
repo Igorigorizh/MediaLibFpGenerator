@@ -60,6 +60,7 @@ class Media_FileSystem_Helper_Progress(mfsh):
     def find_new_music_folder(self,*args):
         result = None
         print('in find_new_music_folder helper progress  args:',args)
+        logger.debug(f'in find_new_music_folder helper progress  args:{args}')
         if self.progress_recorder:
             self.progress_recorder.set_progress(1, 2, description=self.progress_recorder_descr)
             # here we call original parent find_new_music_folder
@@ -74,6 +75,7 @@ class Media_FileSystem_Helper_Progress(mfsh):
                 result = {'error': resD['error']}    
             # Update final progress to get 100%   
             print('last progress:',self._current_iteration)
+            logger.debug(f'in find_new_music_folder helper progress:  last progress val:{self._current_iteration}')
             self.progress_recorder.set_progress(self._current_iteration, self._current_iteration,\
                                                     description=self.progress_recorder_descr)
         return result
@@ -136,18 +138,23 @@ def callback_FP_gen(result,*args):
 	# Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задач.\
 	# Ниже только формируется план
 	# scheduler.get_fp_overall_progress(root_task=res.children[0]), где res = get_async_res_via_id('592027a3-2d10-4f27-934e-fc2f6b67dc1e')
-	folderL = result['result']
-	print()
-	print('args in callback_FP_gen:',args)
+    if 'error' in result['result']:
+        error = result['result']['error']
+        logger.warning(f'Error in callback_FP_gen:{error}')
+        return {'result':[], 'error':'No fp process due to error on previouse step'}
+    folderL = result['result']
+    print()
+    print('args in callback_FP_gen:',args)
 	
-	if folderL:
-		for folder_name in folderL:
-			if 'ACOUSTID_MB_REQ' in args:
-				task_fp_res = app.send_task('get_FP_and_discID_for_album',(folder_name, 0, 1, 'multy', 'FP'), link=fp_post_processing_req)
-			else:
-				task_fp_res = app.send_task('get_FP_and_discID_for_album',(folder_name, 0, 1, 'multy', 'FP'))
-	else:
-		print("Error in callback_FP_gen: None result")
+    if folderL:
+        for folder_name in folderL:
+            if 'ACOUSTID_MB_REQ' in args:
+                task_fp_res = app.send_task('get_FP_and_discID_for_album',(folder_name, 0, 1, 'multy', 'FP'),\
+                                                link=fp_post_processing_req)
+            else:
+                task_fp_res = app.send_task('get_FP_and_discID_for_album',(folder_name, 0, 1, 'multy', 'FP'))
+    else:
+        print("Error in callback_FP_gen: None result")
 		
 		
 get_FP_and_discID_for_album = shared_task(name='get_FP_and_discID_for_album',bind=True)(get_FP_and_discID_for_album)
