@@ -13,6 +13,7 @@ def route_task(name, args, kwargs, options, task=None, **kw):
 
 
 class BaseConfig:
+    FLOWER_API_URL: str = os.environ.get("FLOWER_API_URL", "http://dashboard:5555/api") 
     BASE_DIR: pathlib.Path = pathlib.Path(__file__).parent.parent
     #UPLOADS_DEFAULT_DEST: str = str(BASE_DIR / "upload")
 
@@ -58,6 +59,7 @@ class ProductionConfig(BaseConfig):
 
 class TestingConfig(BaseConfig):
     # https://fastapi.tiangolo.com/advanced/testing-database/
+    FLOWER_API_URL: str = os.environ.get("FLOWER_API_URL", "http://192.168.1.65:5556/api")
     DATABASE_URL: str = "sqlite:///./test.db"
     DATABASE_CONNECT_DICT: dict = {"check_same_thread": False}
 

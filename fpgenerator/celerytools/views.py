@@ -19,11 +19,11 @@ from .tasks import find_new_music_folder_task, callback_acoustID_request, callba
 from .models import Fp
 #from fpgenerator.database import get_db_session
 
-
+from fpgenerator.conf import settings
 logger = logging.getLogger(__name__)
 templates = Jinja2Templates(directory="fpgenerator/celerytools/templates")
 
-flower_host_api = 'http://'+urllib.parse.urlparse(current_celery_app.conf.result_backend).netloc.split(':')[0]+':5556/api'
+flower_host_api = settings.FLOWER_API_URL
 flower_task_api = '{}/task'.format(flower_host_api)
 
 @fp_router.get("/form/get_current_root_task/")
