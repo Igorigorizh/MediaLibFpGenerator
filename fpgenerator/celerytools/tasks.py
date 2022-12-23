@@ -134,7 +134,7 @@ def worker_ffmpeg_and_fingerprint_task(task_param):
     
 @shared_task(base=ProgressTask, name='worker_fingerprint_task',serializer='json',bind=True)
 def worker_fingerprint_task(task_param):
-    return {'result': FpGenerator().worker_fingerprint(task_param)}    
+    return {'result': FpGenerator().worker_fingerprint(*task_param)}    
 
 @app.task(name="tasks.callback_FP_gen_2")
 def callback_FP_gen_2(result,*args):
@@ -172,7 +172,7 @@ def callback_FP_gen_2(result,*args):
                         #schedule worker_fingerprint(*item_params)
                         print('-------worker_fingerprint--------',item_params,type(item_params))
                         logger.info(f'in callback_FP_gen_2:{item_params}')
-                        res_fp = app.send_task('worker_fingerprint_task',(item_params))
+                        res_fp = app.send_task('worker_fingerprint_task',(item_params,))
 
                             
     else:
