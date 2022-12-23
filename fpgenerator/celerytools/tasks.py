@@ -130,12 +130,10 @@ def callback_MB_get_releases_by_discid_request(result):
 
 @shared_task(base=ProgressTask, name='worker_ffmpeg_and_fingerprint_task',serializer='json',bind=True)
 def worker_ffmpeg_and_fingerprint_task(self, *args):
-    print('-------worker_ffmpeg_and_fingerprint_task--------',args,type(args))
     return {'result': FpGenerator().worker_ffmpeg_and_fingerprint(*args)}
     
 @shared_task(base=ProgressTask, name='worker_fingerprint_task',serializer='json',bind=True)
 def worker_fingerprint_task(self, *args):
-    print('-------worker_fingerprint--------',args,type(args))
     return {'result': FpGenerator().worker_fingerprint(*args)}    
 
 @app.task(name="tasks.callback_FP_gen_2")
@@ -161,19 +159,15 @@ def callback_FP_gen_2(result,*args):
                 #                                link=fp_post_processing_req)
             else:
                 scenario_result = fp.build_fp_task_param(folder_name)
-                #print(scenario_result)
                 if scenario_result['scenario'] == 'single_image_CUE':
                     # call worker with splitting
                     for item_params in scenario_result['params']: 
-                        # schedule worker_ffmpeg_and_fingerprint(*item_params)
                         res_fp = app.send_task('worker_ffmpeg_and_fingerprint_task',(item_params))
   
                 else:
                     # call fp generator worker
                     for item_params in scenario_result['params']: 
-                        #schedule worker_fingerprint(*item_params)
-                        
-                        logger.info(f'in callback_FP_gen_2:{item_params}')
+                        logger.debug(f'in callback_FP_gen_2:{item_params}')
                         res_fp = app.send_task('worker_fingerprint_task',(item_params,))
 
                             
