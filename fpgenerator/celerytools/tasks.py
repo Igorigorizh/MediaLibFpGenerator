@@ -129,13 +129,14 @@ def callback_MB_get_releases_by_discid_request(result):
 
 
 @shared_task(base=ProgressTask, name='worker_ffmpeg_and_fingerprint_task',serializer='json',bind=True)
-def worker_ffmpeg_and_fingerprint_task(*args):
-    return {'result': FpGenerator().worker_ffmpeg_and_fingerprint(*args)}
+def worker_ffmpeg_and_fingerprint_task(self, *args):
+    print('-------worker_ffmpeg_and_fingerprint_task--------',args,type(args))
+    return {'result': FpGenerator().worker_ffmpeg_and_fingerprint(args)}
     
 @shared_task(base=ProgressTask, name='worker_fingerprint_task',serializer='json',bind=True)
-def worker_fingerprint_task(*args):
+def worker_fingerprint_task(self, *args):
     print('-------worker_fingerprint--------',args,type(args))
-    return {'result': FpGenerator().worker_fingerprint(args[1])}    
+    return {'result': FpGenerator().worker_fingerprint(args)}    
 
 @app.task(name="tasks.callback_FP_gen_2")
 def callback_FP_gen_2(result,*args):
@@ -144,7 +145,7 @@ def callback_FP_gen_2(result,*args):
 	# scheduler.get_fp_overall_progress(root_task=res.children[0]), где res = get_async_res_via_id('592027a3-2d10-4f27-934e-fc2f6b67dc1e')
     if 'error' in result['result']:
         error = result['result']['error']
-        logger.warning(f'Error in callback_FP_gen:{error}')
+        logger.warning(f'Error in callback_FP_gen_2:{error}')
         return {'result':[], 'error':'No fp process due to error on previouse step'}
         
     fp = FpGenerator()    
