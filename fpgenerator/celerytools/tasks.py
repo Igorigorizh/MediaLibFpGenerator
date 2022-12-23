@@ -131,7 +131,7 @@ def callback_MB_get_releases_by_discid_request(result):
 @shared_task(base=ProgressTask, name='worker_ffmpeg_and_fingerprint_task',serializer='json',bind=True)
 def worker_ffmpeg_and_fingerprint_task(self, *args):
     print('-------worker_ffmpeg_and_fingerprint_task--------',args,type(args))
-    return {'result': FpGenerator().worker_ffmpeg_and_fingerprint(args)}
+    return {'result': FpGenerator().worker_ffmpeg_and_fingerprint(*args)}
     
 @shared_task(base=ProgressTask, name='worker_fingerprint_task',serializer='json',bind=True)
 def worker_fingerprint_task(self, *args):
