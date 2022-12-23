@@ -149,7 +149,7 @@ def callback_FP_gen_2(result,*args):
     fp = FpGenerator()    
     folderL = result['result']
     print()
-    print('args in callback_FP_gen:',args)
+    print('args in callback_FP_gen_2:',args)
 	
     if folderL:
         for folder_name in folderL:
@@ -159,18 +159,19 @@ def callback_FP_gen_2(result,*args):
                 #                                link=fp_post_processing_req)
             else:
                 scenario_result = fp.build_fp_task_param(folder_name)
- 
+                print(scenario_result)
                 if scenario_result['scenario'] == 'single_image_CUE':
                     # call worker with splitting
                     for item_params in scenario_result['params']: 
                         # schedule worker_ffmpeg_and_fingerprint(*item_params)
-                        res_fp = app.send_task('worker_ffmpeg_and_fingerprint_task',(item_params))
+                        res_fp = app.send_task('worker_ffmpeg_and_fingerprint_task',(*item_params))
   
                 else:
                     # call fp generator worker
                     for item_params in scenario_result['params']: 
                         #schedule worker_fingerprint(*item_params)
-                        res_fp = app.send_task('worker_fingerprint_task',(item_params))
+                        logger.warning(f'in callback_FP_gen_2:{item_params}')
+                        res_fp = app.send_task('worker_fingerprint_task',(*item_params))
 
                             
     else:
