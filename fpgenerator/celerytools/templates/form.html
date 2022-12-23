@@ -365,7 +365,6 @@
       let formData = serialize(data);
 
 	  if ( !formData.path){
-		
 		console.error('Error:', "Empty path")
 		return
 		}
@@ -420,7 +419,7 @@
 		
 		if ( ('root_id' in res )){
 			//alert(res.name)
-			if (res.root_name == "tasks.callback_FP_gen" ){
+			if (res.root_name == "tasks.callback_FP_gen_2" ){
 				$("#taskRunAlertInfo").alert("close");	
 				const taskStatus = res.root_id;
 				const bar = document.querySelector('.progress-bar.proc');
