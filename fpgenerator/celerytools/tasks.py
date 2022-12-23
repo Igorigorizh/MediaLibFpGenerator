@@ -16,22 +16,14 @@ from celery import current_app as app
 
 from .. import BASE_ENCODING
 
-from medialib.myMediaLib_fp_tools import get_FP_and_discID_for_album
+
+from medialib.myMediaLib_fp_tools import FpGenerator, 
 from medialib.myMediaLib_fp_tools import acoustID_lookup_celery_wrapper
 from medialib.myMediaLib_fp_tools import MB_get_releases_by_discid_celery_wrapper
 
 from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
 
 logger = get_task_logger(__name__)
-
-#app = Celery(__name__)
-#app.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379")
-#app.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379")
-#app.conf.imports = 'fpgenerator'
-#app.conf.task_serializer = 'pickle'
-#app.conf.result_serializer = 'pickle'
-#app.conf.accept_content = ['application/json', 'application/x-python-serialize']
-
 
 class ProgressTask(Task):
 	_progress = None
@@ -94,6 +86,8 @@ class Media_FileSystem_Helper_Progress(mfsh):
                 
                 
             self.progress_recorder.set_progress(self._current_iteration, total, description=self.progress_recorder_descr)	
+            
+            
 
 @shared_task(base=ProgressTask, name='find_new_music_folder-new_recogn_name',serializer='json',bind=True)
 def find_new_music_folder_task(self, *args):
@@ -133,6 +127,54 @@ def callback_MB_get_releases_by_discid_request(result):
 	print('MB call:',response)
 	return response	
 
+
+@shared_task(base=ProgressTask, name='worker_ffmpeg_and_fingerprint',serializer='json',bind=True)
+def worker_ffmpeg_and_fingerprint_task(task_param):
+    return {'result': FpGenerator().worker_ffmpeg_and_fingerprint(task_param)}
+    
+@shared_task(base=ProgressTask, name='worker_fingerprint',serializer='json',bind=True)
+def worker_fingerprint_task(task_param):
+    return {'result': FpGenerator().worker_fingerprint(task_param)}    
+
+@app.task(name="tasks.callback_FP_gen_2")
+def callback_FP_gen_2(result,*args):
+	# Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задач.\
+	# Ниже только формируется план
+	# scheduler.get_fp_overall_progress(root_task=res.children[0]), где res = get_async_res_via_id('592027a3-2d10-4f27-934e-fc2f6b67dc1e')
+    if 'error' in result['result']:
+        error = result['result']['error']
+        logger.warning(f'Error in callback_FP_gen:{error}')
+        return {'result':[], 'error':'No fp process due to error on previouse step'}
+        
+    fp = FpGenerator()    
+    folderL = result['result']
+    print()
+    print('args in callback_FP_gen:',args)
+	
+    if folderL:
+        for folder_name in folderL:
+            if 'ACOUSTID_MB_REQ' in args:
+                task_fp_res = app.send_task('fp.build_fp_task_param',(folder_name),\
+                                                link=fp_post_processing_req)
+            else:
+                tasks_param_list = fp.build_fp_task_param(folder_name)
+                for worker in tasks_param_list:
+                    if worker['scenario'] == 'single_image_CUE':
+                        # call worker with splitting
+                        for item_params in worker['params']: 
+                            # schedule worker_ffmpeg_and_fingerprint(*item_params)
+                            res_fp = send_task('worker_ffmpeg_and_fingerprint_task',(item_params))
+  
+                    elif:
+                        # call fp generator worker
+                        for item_params in worker['params']: 
+                            #schedule worker_fingerprint(*item_params)
+                            res_fp = send_task('worker_fingerprint_task',(item_params))
+
+                            
+    else:
+        print("Error in callback_FP_gen: None result")
+
 @app.task(name="tasks.callback_FP_gen")
 def callback_FP_gen(result,*args):
 	# Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задач.\
@@ -157,9 +199,13 @@ def callback_FP_gen(result,*args):
         print("Error in callback_FP_gen: None result")
 		
 		
-get_FP_and_discID_for_album = shared_task(name='get_FP_and_discID_for_album',bind=True)(get_FP_and_discID_for_album)
-acoustID_lookup_celery_wrapper = shared_task(name='acoustID_lookup_celery_wrapper',bind=True)(acoustID_lookup_celery_wrapper)
-MB_get_releases_by_discid_celery_wrapper = shared_task(name='MB_get_releases_by_discid_celery_wrapper',bind=True)(MB_get_releases_by_discid_celery_wrapper)	
+get_FP_and_discID_for_album = shared_task(name='get_FP_and_discID_for_album',bind=True)\
+                                            (get_FP_and_discID_for_album)
+acoustID_lookup_celery_wrapper = shared_task(name='acoustID_lookup_celery_wrapper',bind=True)\
+                                            (acoustID_lookup_celery_wrapper)
+MB_get_releases_by_discid_celery_wrapper = shared_task(name='MB_get_releases_by_discid_celery_wrapper',
+                                                        bind=True)\
+                                                        (MB_get_releases_by_discid_celery_wrapper)	
 
 fp_post_processing_req = group(callback_MB_get_releases_by_discid_request.s(), callback_acoustID_request.s())
 

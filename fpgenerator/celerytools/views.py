@@ -15,7 +15,8 @@ import celery_progress.backend
 
 from . import fp_router
 from .schemas import FolderRequestsBody
-from .tasks import find_new_music_folder_task, callback_acoustID_request, callback_MB_get_releases_by_discid_request, callback_FP_gen, task_test_logger
+from .tasks import find_new_music_folder_task, callback_acoustID_request, callback_MB_get_releases_by_discid_request
+from .tasks import callback_FP_gen, callback_FP_gen_2 task_test_logger
 from .models import Fp
 #from fpgenerator.database import get_db_session
 
@@ -190,6 +191,8 @@ def form_fp_process_start(folder_req_body: FolderRequestsBody):
         arg = 'ACOUSTID_MB_REQ'
     if folder_req_body.fp_flag:
         task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',([folder_req_body.path],[],[],'initial'),link=callback_FP_gen.s(arg))
+        #task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',\
+        #    ([folder_req_body.path],[],[],'initial'),link=callback_FP_gen_2.s(arg))
     else:
         task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',([folder_req_body.path],[],[],'initial'))
     print('res:',task)
@@ -223,7 +226,7 @@ def task_status(task_id: str):
 
  
 @fp_router.get("/form/task_progress/")
-def task_progress(task_id: str):
+def get_task_progress(task_id: str):
 
     if '\"' in task_id[0] and '\"' in task_id[-1]:
         task_id = task_id[1:-1]
