@@ -164,13 +164,13 @@ def callback_FP_gen_2(result,*args):
                     # call worker with splitting
                     for item_params in scenario_result['params']: 
                         # schedule worker_ffmpeg_and_fingerprint(*item_params)
-                        res_fp = send_task('worker_ffmpeg_and_fingerprint_task',(item_params))
+                        res_fp = app.send_task('worker_ffmpeg_and_fingerprint_task',(item_params))
   
                 else:
                     # call fp generator worker
                     for item_params in worker['params']: 
                         #schedule worker_fingerprint(*item_params)
-                        res_fp = send_task('worker_fingerprint_task',(item_params))
+                        res_fp = app.send_task('worker_fingerprint_task',(item_params))
 
                             
     else:
