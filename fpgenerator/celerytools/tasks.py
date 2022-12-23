@@ -17,10 +17,10 @@ from celery import current_app as app
 from .. import BASE_ENCODING
 
 
-from medialib.myMediaLib_fp_tools import FpGenerator, 
+from medialib.myMediaLib_fp_tools import FpGenerator 
 from medialib.myMediaLib_fp_tools import acoustID_lookup_celery_wrapper
 from medialib.myMediaLib_fp_tools import MB_get_releases_by_discid_celery_wrapper
-
+from medialib.myMediaLib_fp_tools import get_FP_and_discID_for_album
 from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
 
 logger = get_task_logger(__name__)
@@ -165,7 +165,7 @@ def callback_FP_gen_2(result,*args):
                             # schedule worker_ffmpeg_and_fingerprint(*item_params)
                             res_fp = send_task('worker_ffmpeg_and_fingerprint_task',(item_params))
   
-                    elif:
+                    else:
                         # call fp generator worker
                         for item_params in worker['params']: 
                             #schedule worker_fingerprint(*item_params)
