@@ -16,7 +16,7 @@ import celery_progress.backend
 from . import fp_router
 from .schemas import FolderRequestsBody
 from .tasks import find_new_music_folder_task, callback_acoustID_request, callback_MB_get_releases_by_discid_request
-from .tasks import callback_FP_gen, callback_FP_gen_2 task_test_logger
+from .tasks import callback_FP_gen, callback_FP_gen_2, task_test_logger
 from .models import Fp
 #from fpgenerator.database import get_db_session
 
