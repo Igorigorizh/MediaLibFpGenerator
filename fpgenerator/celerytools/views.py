@@ -13,11 +13,14 @@ import json
 import urllib.parse
 import celery_progress.backend
 
+from medialib.myMediaLib_cue import sec2hour
+
 from . import fp_router
 from .schemas import FolderRequestsBody
 from .tasks import find_new_music_folder_task, callback_acoustID_request, callback_MB_get_releases_by_discid_request
 from .tasks import callback_FP_gen, callback_FP_gen_2, task_test_logger
 from .models import Fp
+
 #from fpgenerator.database import get_db_session
 
 from fpgenerator.conf import settings
@@ -376,11 +379,17 @@ def get_fp_overall_progress(task_id: str):
             return JSONResponse(response)
         
         i = 0
+        total_runtime = 0
         for task_item in task.children:
+            
             if task_item.state == 'SUCCESS':
                 i+=1
+                total_runtime+=task_item.result['result']['runtime']
+                
             task_items.append(task_item.task_id)
-
+            
+        #print('--------------total_runtime',sec2hour(total_runtime/4))
+        
         progress = int((i/total_task_num)*100)    
         if state == 'SUCCESS' and len(task_items) >= 1:
             response = {
@@ -388,7 +397,7 @@ def get_fp_overall_progress(task_id: str):
                 'progress': progress, 
                 'total': total_task_num,
                 'succeed':i,
-                'runtime':0
+                'runtime':sec2hour(total_runtime/4)[:-3]
            }
 
         
