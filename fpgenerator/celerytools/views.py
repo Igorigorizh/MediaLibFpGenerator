@@ -118,6 +118,8 @@ def get_task_meta_data(task_id: str):
     state = task.state
     children = []
     meta_data = task._get_task_meta()
+    print(meta_data.keys())
+    print("traceback:",meta_data['traceback'])
     parent_id = None
     worker = ""
     if 'parent_id' in meta_data:
@@ -237,7 +239,7 @@ def get_task_progress(task_id: str):
     print('res:',res)
     
     if state == 'FAILURE':
-    
+        error = str(task.result)
         response = {
             'state': state,
             'error': error
@@ -381,6 +383,60 @@ def get_fp_overall_progress(task_id: str):
             task_items.append(task_item.task_id)
 
         progress = int((i/total_task_num)*100)    
+        if state == 'SUCCESS' and len(task_items) >= 1:
+            response = {
+                'state': state,
+                'progress': progress, 
+                'total': total_task_num,
+                'succeed':i,
+                'runtime':0
+           }
+
+        
+    return JSONResponse(response)
+
+@fp_router.get("/fp/task_subt_stop/")    
+def stop_active_tasks_of_root(task_id: str):
+    progress = 0
+    task_items = []
+    if '\"' in task_id[0] and '\"' in task_id[-1]:
+        task_id = task_id[1:-1]
+    task = AsyncResult(task_id, app=current_celery_app)
+    state = task.state
+    
+    if state == 'FAILURE':
+        error = str(task.result)
+        response = {
+            'state': state,
+            'error': error,
+        }
+        return JSONResponse(response)
+        
+    else:    
+        if task.children:
+            total_task_num = len(task.children)
+        else:    
+            response = {
+            'state': state,
+            'error': 'None object',
+            }
+            return JSONResponse(response)
+
+        if total_task_num == 0:
+            response = {
+            'state': state,
+            'error': 'total_task_num = 0',
+            }
+            return JSONResponse(response)
+        
+        i = 0
+        for task_item in task.children:
+            if task_item.state == 'PENDING':
+                i+=1
+            task_items.append(task_item.task_id)
+            current_celery_app.control.revoke(task_item.task_id, terminate=True, signal='SIGKILL')
+            
+        progress = int((i/total_task_num)*100)
         if state == 'SUCCESS' and len(task_items) >= 1:
             response = {
                 'state': state,
