@@ -165,7 +165,7 @@
 			const total = res.total;
 			const rt = res.runtime;
 			
-			msg.innerHTML = 'Overall albums progress  '+succeed+" of "+total+ '. total time:'+rt
+			msg.innerHTML = 'Overall albums progress  '+succeed+" of "+total+ '. Total time: '+rt
 			console.log(taskProgress);
 			bar.style.width=taskProgress+"%";          
 			bar.innerHTML=taskProgress+"%"+" ("+succeed+":"+total+")";
@@ -319,6 +319,7 @@
 	
 	  .then(response => response.json())
       .then((res) => {
+		//if  ( res.state == "FAILURE" ){ return	}
 		if ( 'parent_id' in res ){
 			get_task_args(res.parent_id)
 		}
@@ -407,13 +408,17 @@
 		
 		if ( ('root_id' in res )){
 			//alert(res.name)
-			if (res.root_name == "tasks.callback_FP_gen_2" ){
+			if ( (res.root_name == "tasks.callback_FP_gen_2" )){
 				$("#taskRunAlertInfo").alert("close");	
 				const taskStatus = res.root_id;
 				const bar = document.querySelector('.progress-bar.proc');
 				$('#fp_flag').prop('checked', true)
 				get_FP_gen_parent(res.root_id)
 				updateProgressBar_proc(bar, res.root_id,);
+			} else {
+				
+				console.error('Error: wrong task type or root task failure:', res.root_name)
+				alert('Error: wrong task type or root task failure:'+ res.root_name)
 			}	
 		}
 		

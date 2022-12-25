@@ -44,22 +44,37 @@ def get_current_live_root_task():
 
         if tasks:
             for task in resp_body['tasks']:
+                name = 'no-name-in-failure'
                 response = get_task_meta_data(task)
                 response_flower = flower_task_info(task)
                 resp_meta_body = json.loads(response.body.decode(encoding=response.charset))   
                 response_flower_body = json.loads(response_flower.body.decode(encoding=response_flower.charset)) 
-                
-                if resp_meta_body['state'] != 'PENDING':     
-                    #print(resp_meta_body['name'],resp_meta_body['parent_id'])
-                    parent_name_response = get_task_meta_data(resp_meta_body['parent_id'])
-                    parent = json.loads(parent_name_response.body.decode(encoding=parent_name_response.charset))
+                if resp_meta_body['state'] == 'FAILURE': 
                     parent_id = resp_meta_body['parent_id']
                     parent_tasks.append(parent_id)
                     response = {
                         'task_id': task,
                         'state': resp_meta_body['state'],
                         'parent_id': parent_id,
-                        'name': parent['name'] 
+                        'name': name 
+                    }
+                    response_item.append(response)
+                    continue
+                if resp_meta_body['state'] != 'PENDING':     
+                    #print(resp_meta_body['name'],resp_meta_body['parent_id'])
+                    parent_name_response = get_task_meta_data(resp_meta_body['parent_id'])
+                    parent = json.loads(parent_name_response.body.decode(encoding=parent_name_response.charset))
+                    parent_id = resp_meta_body['parent_id']
+                    parent_tasks.append(parent_id)
+
+                    if 'name' in parent:
+                        name = parent['name']
+                            
+                    response = {
+                        'task_id': task,
+                        'state': resp_meta_body['state'],
+                        'parent_id': parent_id,
+                        'name': name
                         
                     }
                 elif resp_meta_body['state'] == 'PENDING':
@@ -69,11 +84,14 @@ def get_current_live_root_task():
                         parent = json.loads(parent_name_response.body.decode(encoding=parent_name_response.charset))
                         parent_id = response_flower_body['parent_id']
                         parent_tasks.append(parent_id)
+                        
+                        if 'name' in parent:
+                            name = parent['name']
                         response = {
                             'task_id': task,
                             'state': response_flower_body['state'],
                             'parent_id': response_flower_body['parent_id'],
-                            'name': parent['name']
+                            'name': name
                         }
                     else:
                         #print("------------********---------->",resp_meta_body)
@@ -87,9 +105,9 @@ def get_current_live_root_task():
                 response_item.append(response) 
             if parent_tasks:    
                 if len(set(parent_tasks)) == 1:
-                    return JSONResponse({'root_id': parent_tasks[0], 'root_name': parent['name']})
+                    return JSONResponse({'root_id': parent_tasks[0], 'root_name': name})
                 else:
-                    return JSONResponse({'root_id': parent_tasks[0][0], 'root_name': parent['name']})
+                    return JSONResponse({'root_id': parent_tasks[0][0], 'root_name': name})
             else:
                 return JSONResponse(response_item)
         else:
@@ -110,7 +128,6 @@ def flower_task_info(task_id: str):
     
     return JSONResponse(response)
     
-        
 
 @fp_router.get("/form/task_meta_data/")
 def get_task_meta_data(task_id: str):
@@ -135,7 +152,12 @@ def get_task_meta_data(task_id: str):
         response = {
             'state': state,
             'error': error,
-        }
+            'name': task.name,
+            'parent_id': parent_id,
+            'children': children,
+            'total_children': len(children),
+            'worker': worker
+            }
     else:
         if state == "PENDING":
             response = {
@@ -359,9 +381,9 @@ def get_fp_overall_progress(task_id: str):
             'state': state,
             'error': error,
         }
-        return JSONResponse(response)
+        #return JSONResponse(response)
         
-    else:    
+    if True:    
         if task.children:
             total_task_num = len(task.children)
         else:    
@@ -380,6 +402,7 @@ def get_fp_overall_progress(task_id: str):
         
         i = 0
         total_runtime = 0
+        failed_num = 0
         
         for task_item in task.children:
             
@@ -387,16 +410,31 @@ def get_fp_overall_progress(task_id: str):
                 i+=1
                 total_runtime+=task_item.result['result']['runtime']
                 
+                if 'RC' in task_item.result['result']:
+                    if task_item.result['result']['RC'] < 1:
+                        failed_num +=1
+                else:
+                    failed_num +=1
+                
             task_items.append(task_item.task_id)
             
         progress = int((i/total_task_num)*100)    
-        if state == 'SUCCESS' and len(task_items) >= 1:
+        if state != 'PENDING' and len(task_items) >= 1:
+            runtime = 0
+            try:
+                if ['started_at'] in task.result:
+                    runtime = sec2hour(time.time() - task.result['started_at'] )[:-3]
+            except:
+                pass
+            
+                
             response = {
                 'state': state,
                 'progress': progress, 
                 'total': total_task_num,
-                'succeed':i,
-                'runtime':sec2hour(time.time() - task.result['started_at'] )[:-3]
+                'succeed': i,
+                'runtime': runtime,
+                'failed': failed_num
            }
 
         
