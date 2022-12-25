@@ -352,7 +352,8 @@ def get_fp_overall_progress(task_id: str):
         task_id = task_id[1:-1]
     task = AsyncResult(task_id, app=current_celery_app)
     state = task.state
-    
+    start_time = task.result
+    print(task.result)
     if state == 'FAILURE':
         error = str(task.result)
         response = {

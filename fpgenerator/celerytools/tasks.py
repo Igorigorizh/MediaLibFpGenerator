@@ -150,7 +150,7 @@ def callback_FP_gen_2(result,*args):
     folderL = result['result']
     print()
     print('args in callback_FP_gen_2:',args)
-	
+	s_time = time.time()
     if folderL:
         for folder_name in folderL:
             if 'ACOUSTID_MB_REQ' in args:
@@ -176,6 +176,7 @@ def callback_FP_gen_2(result,*args):
                             
     else:
         print("Error in callback_FP_gen: None result")
+    return {'started_at':s_time}    
 
 @app.task(name="tasks.callback_FP_gen")
 def callback_FP_gen(result,*args):
