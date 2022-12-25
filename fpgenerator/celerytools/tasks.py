@@ -139,9 +139,9 @@ def worker_fingerprint_task(self, *args):
 
 @app.task(name="tasks.callback_FP_gen_2")
 def callback_FP_gen_2(result,*args):
-	# Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задач.\
-	# Ниже только формируется план
-	# scheduler.get_fp_overall_progress(root_task=res.children[0]), где res = get_async_res_via_id('592027a3-2d10-4f27-934e-fc2f6b67dc1e')
+    # Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задач.\
+    # Ниже только формируется план
+    # scheduler.get_fp_overall_progress(root_task=res.children[0]), где res = get_async_res_via_id('592027a3-2d10-4f27-934e-fc2f6b67dc1e')
     if 'error' in result['result']:
         error = result['result']['error']
         logger.warning(f'Error in callback_FP_gen_2:{error}')
@@ -151,7 +151,7 @@ def callback_FP_gen_2(result,*args):
     folderL = result['result']
     print()
     print('args in callback_FP_gen_2:',args)
-	s_time = time.time()
+    s_time = time.time()
     if folderL:
         for folder_name in folderL:
             if 'ACOUSTID_MB_REQ' in args:
@@ -181,9 +181,9 @@ def callback_FP_gen_2(result,*args):
 
 @app.task(name="tasks.callback_FP_gen")
 def callback_FP_gen(result,*args):
-	# Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задач.\
-	# Ниже только формируется план
-	# scheduler.get_fp_overall_progress(root_task=res.children[0]), где res = get_async_res_via_id('592027a3-2d10-4f27-934e-fc2f6b67dc1e')
+    # Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задач.\
+    # Ниже только формируется план
+    # scheduler.get_fp_overall_progress(root_task=res.children[0]), где res = get_async_res_via_id('592027a3-2d10-4f27-934e-fc2f6b67dc1e')
     if 'error' in result['result']:
         error = result['result']['error']
         logger.warning(f'Error in callback_FP_gen:{error}')
