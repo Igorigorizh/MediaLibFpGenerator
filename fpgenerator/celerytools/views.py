@@ -35,7 +35,7 @@ def get_current_live_root_task():
     root_task = []
     response = find_live_jobs()
     resp_body = json.loads(response.body.decode(encoding=response.charset))
-    print('resp_body:',resp_body)
+    #print('resp_body:',resp_body)
     response_item = []
     parent_tasks = []
     parent_name = ''
@@ -50,7 +50,7 @@ def get_current_live_root_task():
                 response_flower_body = json.loads(response_flower.body.decode(encoding=response_flower.charset)) 
                 
                 if resp_meta_body['state'] != 'PENDING':     
-                    print(resp_meta_body['name'],resp_meta_body['parent_id'])
+                    #print(resp_meta_body['name'],resp_meta_body['parent_id'])
                     parent_name_response = get_task_meta_data(resp_meta_body['parent_id'])
                     parent = json.loads(parent_name_response.body.decode(encoding=parent_name_response.charset))
                     parent_id = resp_meta_body['parent_id']
@@ -76,7 +76,7 @@ def get_current_live_root_task():
                             'name': parent['name']
                         }
                     else:
-                        print("------------********---------->",resp_meta_body)
+                        #print("------------********---------->",resp_meta_body)
                         
                         response = {
                             'task_id': task,
@@ -238,7 +238,7 @@ def get_task_progress(task_id: str):
     state = task.state
     res = celery_progress.backend.Progress(task).get_info()
     progress = res
-    print('res:',res)
+    #print('res:',res)
     
     if state == 'FAILURE':
         error = str(task.result)
@@ -334,7 +334,7 @@ def get_sucessor(task_id: str):
     for task_item in task.children:
         if task_item.state == 'SUCCESS':
             i+=1
-        print(task_item.task_id, task_item.state)    
+        #print(task_item.task_id, task_item.state)    
         task_items.append(task_item.task_id)
         
         if state == 'SUCCESS' and len(task_items) == 1:
@@ -352,8 +352,7 @@ def get_fp_overall_progress(task_id: str):
         task_id = task_id[1:-1]
     task = AsyncResult(task_id, app=current_celery_app)
     state = task.state
-    start_time = task.result
-    print(task.result)
+    
     if state == 'FAILURE':
         error = str(task.result)
         response = {
@@ -381,6 +380,7 @@ def get_fp_overall_progress(task_id: str):
         
         i = 0
         total_runtime = 0
+        
         for task_item in task.children:
             
             if task_item.state == 'SUCCESS':
@@ -389,8 +389,6 @@ def get_fp_overall_progress(task_id: str):
                 
             task_items.append(task_item.task_id)
             
-        #print('--------------total_runtime',sec2hour(total_runtime/4))
-        
         progress = int((i/total_task_num)*100)    
         if state == 'SUCCESS' and len(task_items) >= 1:
             response = {
@@ -398,7 +396,7 @@ def get_fp_overall_progress(task_id: str):
                 'progress': progress, 
                 'total': total_task_num,
                 'succeed':i,
-                'runtime':sec2hour(total_runtime/4)[:-3]
+                'runtime':sec2hour(time.time() - task.result['started_at'] )[:-3]
            }
 
         
