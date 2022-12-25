@@ -118,8 +118,7 @@ def get_task_meta_data(task_id: str):
     state = task.state
     children = []
     meta_data = task._get_task_meta()
-    print(meta_data.keys())
-    print("traceback:",meta_data['traceback'])
+    
     parent_id = None
     worker = ""
     if 'parent_id' in meta_data:
