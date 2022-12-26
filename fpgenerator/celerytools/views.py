@@ -424,8 +424,9 @@ def get_fp_overall_progress(task_id: str):
             try:
                 if ['started_at'] in task.result:
                     runtime = sec2hour(time.time() - task.result['started_at'] )[:-3]
-            except:
-                pass
+            except Exception as e:
+                print(f'Exception at time estimation: {e}')
+
             
                 
             response = {
