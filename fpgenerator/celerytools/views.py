@@ -370,6 +370,7 @@ def get_sucessor(task_id: str):
 def get_fp_overall_progress(task_id: str):
     progress = 0
     task_items = []
+    albums = 0
     if '\"' in task_id[0] and '\"' in task_id[-1]:
         task_id = task_id[1:-1]
     task = AsyncResult(task_id, app=current_celery_app)
@@ -432,6 +433,12 @@ def get_fp_overall_progress(task_id: str):
                     runtime = sec2hour(time.time() - task.result['started_at'] )[:-3]
             except Exception as e:
                 print(f'Exception at time estimation: {e}')
+                
+            try:
+                if 'albums' in task.result:
+                    albums = task.result['albums']
+            except Exception as e:
+                print(f'Exception at albums: {e}')                
 
             
                 
@@ -442,7 +449,8 @@ def get_fp_overall_progress(task_id: str):
                 'succeed': i,
                 'runtime': runtime,
                 'failed': failed_num,
-                'albums_succeeded': len(folders)
+                'albums_succeeded': len(folders),
+                'albums_total': albums
            }
 
         
