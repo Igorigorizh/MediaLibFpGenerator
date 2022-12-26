@@ -62,15 +62,29 @@
 		</div>
 	  </div>
 	  </div>
-	  <BR> <BR>
+	  
+	  	  <BR> <BR>
 	  <div class="row">
 	  <div class="col-13 col-md-15">
-	   <div class="mb-3" id="info-progress">Overall fp progress</div>
+	   <h10 class="mb-3" id="info-progress-album">Overall albums progress</h10>
 	  <div class="progress">
-		  <div class="progress-bar proc" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+		  <div class="progress-bar album" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
 		</div>
 	  </div>
 	  </div>
+	  
+	  <BR> <BR>
+	  <div class="row">
+	  <div class="col-13 col-md-15">
+	   <h10 class="mb-3" id="info-progress">Overall fp progress</h10>
+	  <div class="progress">
+		  <div class="progress-bar file" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+		</div>
+	  </div>
+	  </div>
+	  
+
+	  
 	  <BR> <BR>  <BR> <BR>
 	  <div class="row">
 	  <div class="col-13 col-md-15">
@@ -80,6 +94,7 @@
 		  </div>
 	</div>  
 	</div> 
+	
     </div>
   </div>
 
@@ -87,7 +102,7 @@
 <script>
 	var error_count=0;
 
-	function getSucessor(bar, task_id) {
+	function getSucessor(bar_file, bar_album, task_id) {
 		if ( task_id === undefined ) {
 		 alert('undefind-2')
 		 return
@@ -100,7 +115,7 @@
 		  .then((res) => {
 			if ( 'task_id' in res ){
 			 console.log(res)	
-			 updateProgressBar_proc(bar, res.task_id)
+			 updateProgressBar_file(bar_file, bar_album, res.task_id)
 			}
 			
 			if ( ('error' in res) && ( 'task_id' in res ) ){
@@ -133,7 +148,7 @@
 		
 	}
 	
-	function updateProgressBar_proc(bar, task_id) {
+	function updateProgressBar_file(bar_file, bar_album,task_id) {
 		if ( task_id === undefined ) {
 		 alert('undefind')
 		 return
@@ -151,7 +166,7 @@
 			 error_count+=1
 			 if ( error_count < 10 ){
 			 setTimeout(function() {
-				updateProgressBar_proc(bar, task_id);
+				updateProgressBar_file(bar_file, bar_album, task_id);
 			  }, 5000);
 			  } else {
 			 
@@ -159,24 +174,49 @@
 			}
 			}
 			const msg = document.querySelector('#info-progress');
+			const msg_album = document.querySelector('#info-progress-album');
 			
 			const taskProgress = res.progress;
-
+			
+			var taskProgress_album = 0;
+			var albums_succeeded = res.albums_succeeded - 1;
+			
+			if (( res.albums_total != 0) && (res.progress !=100)) {
+				taskProgress_album = Math.round((albums_succeeded/res.albums_total)*100);
+			} 
+			
+			if ( (taskProgress < 100 ) && (taskProgress_album == 100)) {
+				taskProgress_album = 99;
+				albums_succeeded -=1
+			} 
+			
+			if ( (taskProgress == 100 ) && (taskProgress_album < 100)) {
+				taskProgress_album = 100;
+				albums_succeeded = res.albums_total
+			} 
+				
 			const succeed = res.succeed;
 			const total = res.total;
 			const rt = res.runtime;
 			
-			msg.innerHTML = 'Overall fp progress:  '+succeed+" of "+total+ '. Albums:'+res.albums_succeeded+'. Total time: '+rt + '. Failed fp: ' + res.failed
-			console.log(taskProgress);
-			bar.style.width=taskProgress+"%";          
-			bar.innerHTML=taskProgress+"%"+" ("+succeed+":"+total+")";
+			msg.innerHTML = 'Overall fp progress:  '+succeed+" of "+total+ '. Total time: '+rt + '. Failed fp: ' + res.failed
+			
+			msg_album.innerHTML = 'Overall albums progress:  '+albums_succeeded+ " of "+ res.albums_total
+			
+			console.log(taskProgress_album);
+			bar_file.style.width=taskProgress+"%";          
+			bar_file.innerHTML=taskProgress+"%"+" ("+succeed+":"+total+")";
+			
+			bar_album.style.width=taskProgress_album+"%";          
+			bar_album.innerHTML=taskProgress_album+"%"+" ("+albums_succeeded+":"+res.albums_total+")";
+			
 			if(taskProgress==100) {
 				control_submit_buttn('enable')
 				return
 				}
 		  
 		   setTimeout(function() {
-				updateProgressBar_proc(bar, task_id);
+				updateProgressBar_file(bar_file, bar_album, task_id);
 			  }, 5000);
 			
 			}
@@ -186,10 +226,11 @@
 
     function updateProgress(task_id) {
 		const yourForm = document.getElementById("your-form");
-		const bar = document.querySelector('.progress-bar.proc');
+		const bar_file = document.querySelector('.progress-bar.file');
+		const bar_album = document.querySelector('.progress-bar.album');
 		const bar_folder = document.querySelector('.progress-bar.folder');
 		if ( task_id === undefined ) {
-		 alert('undefind')
+		 alert('undefind task id in updateProgress')
 		 return
 		} else {
 		fetch(`/fp/folder_task_progress/?task_id=${task_id}`, {
@@ -214,7 +255,7 @@
 						  return
 					}
 				if ( $('#fp_flag').val() == 'on' ){	
-					getSucessor(bar, task_id)
+					getSucessor(bar_file, bar_album, task_id)
 				}
 				
 			  } else if (taskStatus === 'FAILURE') {
@@ -412,10 +453,11 @@
 			if ( (res.root_name == "tasks.callback_FP_gen_2" )){
 				$("#taskRunAlertInfo").alert("close");	
 				const taskStatus = res.root_id;
-				const bar = document.querySelector('.progress-bar.proc');
+				const bar_file = document.querySelector('.progress-bar.file');
+				const bar_album = document.querySelector('.progress-bar.album');
 				$('#fp_flag').prop('checked', true)
 				get_FP_gen_parent(res.root_id)
-				updateProgressBar_proc(bar, res.root_id,);
+				updateProgressBar_file(bar_file, bar_album,  res.root_id,);
 			} else {
 				
 				console.error('Error: wrong task type or root task failure:', res.root_name)
