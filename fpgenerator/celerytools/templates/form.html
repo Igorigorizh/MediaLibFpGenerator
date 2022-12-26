@@ -10,10 +10,6 @@
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>	
 </head>
 <body>
-	
-
-	
-  
   
 	
 <div class="container">	
@@ -27,9 +23,6 @@
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     <strong>Warning!</strong> Running tasks found. Do not start any more tasks!
   </div>
-  
-
-  
   
     <div class="row">
       <div class="col-12 col-md-10">
@@ -78,7 +71,15 @@
 		</div>
 	  </div>
 	  </div>
-	  
+	  <BR> <BR>  <BR> <BR>
+	  <div class="row">
+	  <div class="col-13 col-md-15">
+	  <button type="button" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#log">Fp log data</button>
+		  <div id="log" class="collapse">
+			No data
+		  </div>
+	</div>  
+	</div> 
     </div>
   </div>
 
@@ -165,7 +166,7 @@
 			const total = res.total;
 			const rt = res.runtime;
 			
-			msg.innerHTML = 'Overall albums progress  '+succeed+" of "+total+ '. Total time: '+rt
+			msg.innerHTML = 'Overall albums progress  '+succeed+" of "+total+ '. Total time: '+rt + '. Failed: ' + res.failed
 			console.log(taskProgress);
 			bar.style.width=taskProgress+"%";          
 			bar.innerHTML=taskProgress+"%"+" ("+succeed+":"+total+")";
