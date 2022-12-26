@@ -91,7 +91,7 @@
 		 alert('undefind-2')
 		 return
 		} else {
-		fetch(`/fp/form/task_sucessor/?task_id=${task_id}`, {
+		fetch(`/fp/task_sucessor/?task_id=${task_id}`, {
 		  method: 'GET',
 		})
 		
@@ -138,7 +138,7 @@
 		 return
 		}
 		else {
-		fetch(`/fp/form/task_subt_progress/?task_id=${task_id}`, {
+		fetch(`/fp/task_subt_progress/?task_id=${task_id}`, {
 		  method: 'GET',
 		})
 		
@@ -191,7 +191,7 @@
 		 alert('undefind')
 		 return
 		} else {
-		fetch(`/fp/form/task_progress/?task_id=${task_id}`, {
+		fetch(`/fp/folder_task_progress/?task_id=${task_id}`, {
 		  method: 'GET',
 		})
 			
@@ -272,7 +272,7 @@
       const msg = yourForm.querySelector('#messages');
       msg.innerHTML = '';	
 
-      fetch('/fp/form/', {
+      fetch('/fp/form/start', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -313,7 +313,7 @@
  }  
   
   function get_FP_gen_parent(task_id){
-	 fetch(`/fp/form/task_meta_data/?task_id=${task_id}`, {
+	 fetch(`/fp/task_meta_data/?task_id=${task_id}`, {
       method: 'GET',
     }) 
 	
@@ -392,7 +392,7 @@
   
   $(document).ready(function(){
 	control_submit_buttn('disable')
-	fetch(`/fp/form/get_current_root_task/`, {
+	fetch(`/fp/get_current_root_task/`, {
       method: 'GET',
     })
 		
