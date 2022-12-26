@@ -177,7 +177,7 @@ def callback_FP_gen_2(result,*args):
                             
     else:
         print("Error in callback_FP_gen: None result")
-    return {'started_at':s_time}    
+    return {'started_at':s_time,'albums':len(folderL)}    
 
 @app.task(name="tasks.callback_FP_gen")
 def callback_FP_gen(result,*args):
