@@ -413,8 +413,10 @@ def get_fp_overall_progress(task_id: str):
                 if 'RC' in task_item.result['result']:
                     if task_item.result['result']['RC'] < 1:
                         failed_num +=1
+                        print('------------res_failed:',task_item.result['result'])
                 else:
                     failed_num +=1
+                    print('------------res_failed2:',task_item.result)
                 
             task_items.append(task_item.task_id)
             
@@ -440,6 +442,86 @@ def get_fp_overall_progress(task_id: str):
 
         
     return JSONResponse(response)
+    
+    
+    
+@fp_router.get("/get_subt_log/")    
+def get_fp_subtask_log(task_id: str):
+    progress = 0
+    total_task_num = 0
+    task_items = []
+    if '\"' in task_id[0] and '\"' in task_id[-1]:
+        task_id = task_id[1:-1]
+    task = AsyncResult(task_id, app=current_celery_app)
+    state = task.state
+    
+    if state == 'FAILURE':
+        error = str(task.result)
+        response = {
+            'state': state,
+            'error': error,
+        }
+        #return JSONResponse(response)
+        
+    
+    if task.children:
+        total_task_num = len(task.children)
+    else:    
+        response = {
+        'state': state,
+        'error': 'None object',
+        }
+        return JSONResponse(response)
+
+    if total_task_num == 0:
+        response = {
+        'state': state,
+        'error': 'total_task_num = 0',
+        }
+        return JSONResponse(response)
+        
+    i = 0
+    total_runtime = 0
+    failed_num = 0
+    
+    log_data = ""
+    for task_item in task.children:
+            
+        if task_item.state == 'SUCCESS':
+            i+=1
+            total_runtime+=task_item.result['result']['runtime']
+            
+            if 'RC' in task_item.result['result']:
+                if task_item.result['result']['RC'] < 1:
+                    log_data += task_item.result['result']['RC']['folder_name']+'\n'  
+                    failed_num +=1    
+
+            else:
+                failed_num +=1
+                print('------------res_failed2:',task_item.result)
+                
+        task_items.append(task_item.task_id)
+            
+    if state != 'PENDING' and len(task_items) >= 1:
+        runtime = 0
+        try:
+            if 'started_at' in task.result:
+                runtime = sec2hour(time.time() - task.result['started_at'] )[:-3]
+        except Exception as e:
+            print(f'Exception at time estimation: {e}')
+
+            
+                
+        response = {
+                'state': state,
+                'total': total_task_num,
+                'succeed': i,
+                'log': log_data,
+                'failed': failed_num
+        }
+
+        
+    return JSONResponse(response)    
 
 @fp_router.get("/task_subt_stop/")    
 def stop_active_tasks_of_root(task_id: str):
