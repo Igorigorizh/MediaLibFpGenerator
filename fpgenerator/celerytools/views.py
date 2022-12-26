@@ -30,7 +30,7 @@ templates = Jinja2Templates(directory="fpgenerator/celerytools/templates")
 flower_host_api = settings.FLOWER_API_URL
 flower_task_api = '{}/task'.format(flower_host_api)
 
-@fp_router.get("/form/get_current_root_task/")
+@fp_router.get("/get_current_root_task/")
 def get_current_live_root_task():
     root_task = []
     response = find_live_jobs()
@@ -129,7 +129,7 @@ def flower_task_info(task_id: str):
     return JSONResponse(response)
     
 
-@fp_router.get("/form/task_meta_data/")
+@fp_router.get("/task_meta_data/")
 def get_task_meta_data(task_id: str):
     if '\"' in task_id[0] and '\"' in task_id[-1]:
         task_id = task_id[1:-1]
@@ -178,7 +178,7 @@ def get_task_meta_data(task_id: str):
             }
     return JSONResponse(response)
 
-@fp_router.get("/form/tasks_live/")
+@fp_router.get("/tasks_live/")
 def find_live_jobs():
     i = current_celery_app.control.inspect()
     # scheduled(): tasks with an ETA or countdown
@@ -208,7 +208,7 @@ def stop_fp_process(task_id: str):
     
     return JSONResponse({"stopped": current_celery_app.control.purge()})
     
-@fp_router.post("/form/")
+@fp_router.post("/form/start")
 def form_fp_process_start(folder_req_body: FolderRequestsBody):
     arg = ''
     current_celery_app.control.purge()
@@ -230,7 +230,7 @@ def fp_test():
     task = task_test_logger.delay()
     return JSONResponse({"message": "send logger message task to Celery successfully","task_id": task.task_id})
  
-@fp_router.get("/form/task_status/")
+@fp_router.get("/task_status/")
 def task_status(task_id: str):
 
     if '\"' in task_id[0] and '\"' in task_id[-1]:
@@ -251,7 +251,7 @@ def task_status(task_id: str):
     return JSONResponse(response)
 
  
-@fp_router.get("/form/task_progress/")
+@fp_router.get("/folder_task_progress/")
 def get_task_progress(task_id: str):
 
     if '\"' in task_id[0] and '\"' in task_id[-1]:
@@ -318,7 +318,7 @@ def get_task_progress(task_id: str):
         }
     return JSONResponse(response)
     
-@fp_router.get("/form/task_sucessor/")        
+@fp_router.get("/task_sucessor/")        
 def get_sucessor(task_id: str):    
     """ Lookup for a cucessor which is a callback by itself and has childs """
     
@@ -366,7 +366,7 @@ def get_sucessor(task_id: str):
             }        
     return JSONResponse(response)        
     
-@fp_router.get("/form/task_subt_progress/")    
+@fp_router.get("/task_subt_progress/")    
 def get_fp_overall_progress(task_id: str):
     progress = 0
     task_items = []
@@ -422,7 +422,7 @@ def get_fp_overall_progress(task_id: str):
         if state != 'PENDING' and len(task_items) >= 1:
             runtime = 0
             try:
-                if ['started_at'] in task.result:
+                if 'started_at' in task.result:
                     runtime = sec2hour(time.time() - task.result['started_at'] )[:-3]
             except Exception as e:
                 print(f'Exception at time estimation: {e}')
@@ -441,7 +441,7 @@ def get_fp_overall_progress(task_id: str):
         
     return JSONResponse(response)
 
-@fp_router.get("/fp/task_subt_stop/")    
+@fp_router.get("/task_subt_stop/")    
 def stop_active_tasks_of_root(task_id: str):
     progress = 0
     task_items = []
