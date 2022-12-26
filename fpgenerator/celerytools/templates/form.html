@@ -65,7 +65,7 @@
 	  <BR> <BR>
 	  <div class="row">
 	  <div class="col-13 col-md-15">
-	   <div class="mb-3" id="info-progress">Overall albums progress</div>
+	   <div class="mb-3" id="info-progress">Overall fp progress</div>
 	  <div class="progress">
 		  <div class="progress-bar proc" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
 		</div>
@@ -166,7 +166,7 @@
 			const total = res.total;
 			const rt = res.runtime;
 			
-			msg.innerHTML = 'Overall albums progress  '+succeed+" of "+total+ '. Total time: '+rt + '. Failed: ' + res.failed
+			msg.innerHTML = 'Overall fp progress:  '+succeed+" of "+total+ '. Albums:'+res.albums_succeeded+'. Total time: '+rt + '. Failed fp: ' + res.failed
 			console.log(taskProgress);
 			bar.style.width=taskProgress+"%";          
 			bar.innerHTML=taskProgress+"%"+" ("+succeed+":"+total+")";

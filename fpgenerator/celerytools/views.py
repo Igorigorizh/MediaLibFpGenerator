@@ -403,6 +403,7 @@ def get_fp_overall_progress(task_id: str):
         i = 0
         total_runtime = 0
         failed_num = 0
+        folders = []
         
         for task_item in task.children:
             
@@ -414,6 +415,9 @@ def get_fp_overall_progress(task_id: str):
                     if task_item.result['result']['RC'] < 1:
                         failed_num +=1
                         print('------------res_failed:',task_item.result['result'])
+                    else:
+                         if task_item.result['result']['folder_name'] not in folders:
+                            folders.append(task_item.result['result']['folder_name'])
                 else:
                     failed_num +=1
                     print('------------res_failed2:',task_item.result)
@@ -437,7 +441,8 @@ def get_fp_overall_progress(task_id: str):
                 'total': total_task_num,
                 'succeed': i,
                 'runtime': runtime,
-                'failed': failed_num
+                'failed': failed_num,
+                'albums_succeeded': len(folders)
            }
 
         
@@ -484,7 +489,8 @@ def get_fp_subtask_log(task_id: str):
     total_runtime = 0
     failed_num = 0
     
-    log_data = ""
+    log_data = []
+    log_folder_data = []
     for task_item in task.children:
             
         if task_item.state == 'SUCCESS':
@@ -493,8 +499,25 @@ def get_fp_subtask_log(task_id: str):
             
             if 'RC' in task_item.result['result']:
                 if task_item.result['result']['RC'] < 1:
-                    log_data += task_item.result['result']['RC']['folder_name']+'\n'  
-                    failed_num +=1    
+                    failed_num +=1
+                    if type(task_item.result['result']['folder_name']) == str:
+                        data = task_item.result['result']['folder_name']
+                    else:
+                        data = task_item.result['result']['folder_name'].decode('utf-8')
+                        
+                    #log_data += f'{failed_num}. {data} \n'    
+                    if data not in log_data:
+                        log_data.append(data)
+                        
+                else:
+                    if type(task_item.result['result']['folder_name']) == str:
+                        data = task_item.result['result']['folder_name']
+                    else:
+                        data = task_item.result['result']['folder_name'].decode('utf-8')
+                    
+                    if data not in log_folder_data:
+                        log_folder_data.append(data)
+                    #log_data += f'{i}. {data} \n'
 
             else:
                 failed_num +=1
@@ -517,7 +540,9 @@ def get_fp_subtask_log(task_id: str):
                 'total': total_task_num,
                 'succeed': i,
                 'log': log_data,
-                'failed': failed_num
+                'succeed_folders_log': log_folder_data,
+                'succeed_folders': len(log_folder_data),
+                'failed': len(log_data)
         }
 
         
