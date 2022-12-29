@@ -18,7 +18,7 @@ def create_app() -> FastAPI:
     from fpgenerator.celery_utils import create_celery
     app.celery_app = create_celery()
 
-    from fpgenerator.celerytools import fp_router
+    from fpgenerator.celerytools import fp_router, cdtoc_router 
     app.include_router(fp_router)
     app.include_router(cdtoc_router)
     	
