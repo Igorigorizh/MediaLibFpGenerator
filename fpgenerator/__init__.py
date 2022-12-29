@@ -20,6 +20,8 @@ def create_app() -> FastAPI:
 
     from fpgenerator.celerytools import fp_router
     app.include_router(fp_router)
+    app.include_router(cdtoc_router)
+    	
 
     """
     from project.tdd import tdd_router

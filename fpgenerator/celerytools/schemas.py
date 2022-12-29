@@ -4,6 +4,7 @@ from pathlib import Path
 class FolderRequestsBody(BaseModel):
     path: str
     fp_flag: str | None = None
+    cdtoc_flag: str | None = None
     post_proc_flag: str | None = None
     
     @validator("path")
