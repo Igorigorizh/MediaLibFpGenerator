@@ -18,7 +18,7 @@ from celery import current_app as app
 from .. import BASE_ENCODING
 
 
-from medialib.myMediaLib_fp_tools import FpGenerator 
+from medialib.myMediaLib_fp_tools import FpGenerator, CdTocGenerator 
 from medialib.myMediaLib_fp_tools import acoustID_lookup_celery_wrapper
 from medialib.myMediaLib_fp_tools import MB_get_releases_by_discid_celery_wrapper
 from medialib.myMediaLib_fp_tools import get_FP_and_discID_for_album
@@ -137,6 +137,38 @@ def worker_ffmpeg_and_fingerprint_task(self, *args):
 def worker_fingerprint_task(self, *args):
     return {'result': FpGenerator().worker_fingerprint(*args)}    
 
+@app.task(name="tasks.callback_CDTOC_gen")
+def callback_CDTOC_gen(result,*args):
+    # Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задач.\
+    # Ниже только формируется план
+    # scheduler.get_fp_overall_progress(root_task=res.children[0]), где res = get_async_res_via_id('592027a3-2d10-4f27-934e-fc2f6b67dc1e')
+    if 'error' in result['result']:
+        error = result['result']['error']
+        logger.warning(f'Error in callback_FP_gen_2:{error}')
+        return {'result':[], 'error':'No cdtoc process due to error on previouse step'}
+    
+    scenario_result = {}    
+    cdtoc = CdTocGenerator()    
+    folderL = result['result']
+    print()
+    print('args in callback_FP_gen_2:',args)
+	
+    if folderL:
+        for folder_name in folderL:
+            if 'MB_REQ' in args:
+                pass
+                #task_fp_res = app.send_task('cdtoc.build_fp_task_param',(folder_name),\
+                #                                link=fp_post_processing_req)
+            else:
+                scenario_result = cdtoc.cue_folder_check_scenario_processing(folder_name)
+                
+
+    else:
+        print("Error in callback_FP_gen: None result")
+
+    return scenario_result
+
+
 @app.task(name="tasks.callback_FP_gen_2")
 def callback_FP_gen_2(result,*args):
     # Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задач.\
@@ -159,7 +191,7 @@ def callback_FP_gen_2(result,*args):
                 #task_fp_res = app.send_task('fp.build_fp_task_param',(folder_name),\
                 #                                link=fp_post_processing_req)
             else:
-                scenario_result = fp.build_fp_task_param(folder_name)
+                scenario_result = fp.cue_folder_check_scenario_processing(folder_name)
                 if 'scenario' in scenario_result:
                     if scenario_result['scenario'] == 'single_image_CUE':
                         # call worker with splitting

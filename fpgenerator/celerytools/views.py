@@ -15,10 +15,11 @@ import celery_progress.backend
 
 from medialib.myMediaLib_cue import sec2hour
 
-from . import fp_router
+from . import fp_router, cdtoc_router
 from .schemas import FolderRequestsBody
 from .tasks import find_new_music_folder_task, callback_acoustID_request, callback_MB_get_releases_by_discid_request
 from .tasks import callback_FP_gen, callback_FP_gen_2, task_test_logger
+from .tasks import callback_CDTOC_gen
 from .models import Fp
 
 #from fpgenerator.database import get_db_session
@@ -224,6 +225,23 @@ def form_fp_process_start(folder_req_body: FolderRequestsBody):
     print('res:',task)
 
     return JSONResponse({"task_id": task.task_id})    
+
+@cdtoc_router.post("/form/")
+def form_cdtoc_process_start(folder_req_body: FolderRequestsBody):
+    arg = ''
+    current_celery_app.control.purge()
+    if folder_req_body.post_proc_flag:
+        print("in view:", folder_req_body.post_proc_flag)
+        arg = 'ACOUSTID_MB_REQ'
+    if folder_req_body.cdtoc_flag:
+        #task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',([folder_req_body.path],[],[],'initial'),link=callback_FP_gen.s(arg))
+        task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',\
+            ([folder_req_body.path],[],[],'initial'),link=callback_CDTOC_gen.s(arg))
+    print('res:',task)
+
+    return JSONResponse({"task_id": task.task_id})    
+
+
 
 @fp_router.get("/fp_test/test_logger")
 def fp_test():
