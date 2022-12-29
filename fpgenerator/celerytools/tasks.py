@@ -27,13 +27,12 @@ from medialib.myMediaLib_fs_util import Media_FileSystem_Helper as mfsh
 logger = get_task_logger(__name__)
 
 class ProgressTask(Task):
-	_progress = None
-	@property
-	def progress(self):
-		print('in ProgressTask:progress:',self._progress)
-		self._progress = ProgressRecorder(self)
-		return self._progress
-		
+    _progress = None
+    @property
+    def progress(self):
+        print('in ProgressTask:progress:',self._progress)
+        self._progress = ProgressRecorder(self)
+        return self._progress
 
 
 class Media_FileSystem_Helper_Progress(mfsh):
@@ -102,31 +101,31 @@ def find_new_music_folder_task(self, *args):
 
 @shared_task(name="tasks.callback_acoustID_request")
 def callback_acoustID_request(result):
-	#acoustID.lookup(apikey, fingerprint, duration)
-	API_KEY = 'cSpUJKpD'
-	meta = ["recordings","recordingids","releases","releaseids","releasegroups","releasegroupids", "tracks", "compress", "usermeta", "sources"]
-	reqL = []
-	print('try acoustId call')
-	if 'convDL' not in result:
-		return {'RC':-4}
-	for fp_item in result['convDL']:
-		print('fp item fp:',fp_item['fp'],fp_item['fname'])
-		wrapper_args = (fp_item['fp'][0],fp_item['fp'][1],fp_item['fname'],result['album_path'])
-		response = app.send_task('acoustID_lookup_celery_wrapper',(wrapper_args))
-		print('acoustId call:',response)	
+    #acoustID.lookup(apikey, fingerprint, duration)
+    API_KEY = 'cSpUJKpD'
+    meta = ["recordings","recordingids","releases","releaseids","releasegroups","releasegroupids", "tracks", "compress", "usermeta", "sources"]
+    reqL = []
+    print('try acoustId call')
+    if 'convDL' not in result:
+        return {'RC':-4}
+    for fp_item in result['convDL']:
+        print('fp item fp:',fp_item['fp'],fp_item['fname'])
+        wrapper_args = (fp_item['fp'][0],fp_item['fp'][1],fp_item['fname'],result['album_path'])
+        response = app.send_task('acoustID_lookup_celery_wrapper',(wrapper_args))
+        print('acoustId call:',response)	
 		
-	print('acoustId call - OK')	
-	return result['convDL']
+    print('acoustId call - OK')	
+    return result['convDL']
 	
 @shared_task(name="tasks.callback_MB_get_releases_by_discid_request")
 def callback_MB_get_releases_by_discid_request(result):
-	if 'discID' not in result:
-		return {'RC':-4}
+    if 'discID' not in result:
+        return {'RC':-4}
 		
-	wrapper_args = ((result['discID'],))	
-	response = app.send_task('MB_get_releases_by_discid_celery_wrapper',(wrapper_args))
-	print('MB call:',response)
-	return response	
+    wrapper_args = ((result['discID'],))	
+    response = app.send_task('MB_get_releases_by_discid_celery_wrapper',(wrapper_args))
+    print('MB call:',response)
+    return response	
 
 
 @shared_task(base=ProgressTask, name='worker_ffmpeg_and_fingerprint_task',serializer='json',bind=True)
@@ -147,7 +146,7 @@ def callback_CDTOC_gen(result,*args):
         logger.warning(f'Error in callback_FP_gen_2:{error}')
         return {'result':[], 'error':'No cdtoc process due to error on previouse step'}
     
-    scenario_result = {}    
+    scenario_result = []    
     cdtoc = CdTocGenerator()    
     folderL = result['result']
     print()
@@ -160,7 +159,7 @@ def callback_CDTOC_gen(result,*args):
                 #task_fp_res = app.send_task('cdtoc.build_fp_task_param',(folder_name),\
                 #                                link=fp_post_processing_req)
             else:
-                scenario_result = cdtoc.cue_folder_check_scenario_processing(folder_name)
+                scenario_result.append(cdtoc.cue_folder_check_scenario_processing(folder_name))
                 
 
     else:
