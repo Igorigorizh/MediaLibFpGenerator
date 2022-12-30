@@ -136,11 +136,10 @@ def worker_ffmpeg_and_fingerprint_task(self, *args):
 def worker_fingerprint_task(self, *args):
     return {'result': FpGenerator().worker_fingerprint(*args)}    
 
-@app.task(name="tasks.callback_CDTOC_gen")
+@app.task(base=ProgressTask, name="tasks.callback_CDTOC_gen")
 def callback_CDTOC_gen(result,*args):
-    # Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задач.\
-    # Ниже только формируется план
-    # scheduler.get_fp_overall_progress(root_task=res.children[0]), где res = get_async_res_via_id('592027a3-2d10-4f27-934e-fc2f6b67dc1e')
+    # Прогресс всего процесса поальбомно расчитывается на основе cчетчика обработанных папок - folder_name in folderL.\
+    
     if 'error' in result['result']:
         error = result['result']['error']
         logger.warning(f'Error in callback_FP_gen_2:{error}')
@@ -163,7 +162,7 @@ def callback_CDTOC_gen(result,*args):
                 
 
     else:
-        print("Error in callback_FP_gen: None result")
+        print("Error in callback_CDTOC_gen: None result")
 
     return scenario_result
 
