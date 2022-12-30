@@ -136,10 +136,11 @@ def worker_ffmpeg_and_fingerprint_task(self, *args):
 def worker_fingerprint_task(self, *args):
     return {'result': FpGenerator().worker_fingerprint(*args)}    
 
-@app.task(base=ProgressTask, name="tasks.callback_CDTOC_gen")
-def callback_CDTOC_gen(result,*args):
+@app.task(name="tasks.callback_CDTOC_gen")
+def callback_CDTOC_gen(self,result,*args):
     # Прогресс всего процесса поальбомно расчитывается на основе cчетчика обработанных папок - folder_name in folderL.\
-    
+    progress_recorder = ProgressRecorder(self)   
+    descr = "medialib-job-CDTOC-scan-progress"    
     if 'error' in result['result']:
         error = result['result']['error']
         logger.warning(f'Error in callback_FP_gen_2:{error}')
@@ -152,6 +153,8 @@ def callback_CDTOC_gen(result,*args):
     print('args in callback_FP_gen_2:',args)
 	
     if folderL:
+        max_progress = len(folderL)
+        i = 0
         for folder_name in folderL:
             if 'MB_REQ' in args:
                 pass
@@ -159,6 +162,7 @@ def callback_CDTOC_gen(result,*args):
                 #                                link=fp_post_processing_req)
             else:
                 scenario_result.append(cdtoc.cue_folder_check_scenario_processing(folder_name))
+                progress_recorder.set_progress(i + 1, max_progress, description=descr)
                 
 
     else:
