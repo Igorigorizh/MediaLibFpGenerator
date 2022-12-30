@@ -128,18 +128,18 @@ def callback_MB_get_releases_by_discid_request(result):
     return response	
 
 
-@shared_task(base=ProgressTask, name='worker_ffmpeg_and_fingerprint_task',serializer='json',bind=True)
+@shared_task(name='worker_ffmpeg_and_fingerprint_task',serializer='json',bind=True)
 def worker_ffmpeg_and_fingerprint_task(self, *args):
     return {'result': FpGenerator().worker_ffmpeg_and_fingerprint(*args)}
     
-@shared_task(base=ProgressTask, name='worker_fingerprint_task',serializer='json',bind=True)
+@shared_task(name='worker_fingerprint_task',serializer='json',bind=True)
 def worker_fingerprint_task(self, *args):
     return {'result': FpGenerator().worker_fingerprint(*args)}    
 
-@app.task(name="tasks.callback_CDTOC_gen")
-def callback_CDTOC_gen(self,result,*args):
+@app.task(base=ProgressTask, name="tasks.callback_CDTOC_gen")
+def callback_CDTOC_gen(result,*args):
     # Прогресс всего процесса поальбомно расчитывается на основе cчетчика обработанных папок - folder_name in folderL.\
-    progress_recorder = ProgressRecorder(self)   
+    progress_recorder = ProgressRecorder(callback_CDTOC_gen)   
     descr = "medialib-job-CDTOC-scan-progress"    
     if 'error' in result['result']:
         error = result['result']['error']
