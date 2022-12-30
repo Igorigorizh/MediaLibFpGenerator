@@ -236,7 +236,7 @@ def form_cdtoc_process_start(folder_req_body: FolderRequestsBody):
     if folder_req_body.cdtoc_flag:
         #task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',([folder_req_body.path],[],[],'initial'),link=callback_FP_gen.s(arg))
         task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',\
-            ([folder_req_body.path],[],[],'initial'),link=callback_CDTOC_gen(arg))
+            ([folder_req_body.path],[],[],'initial'),link=callback_CDTOC_gen.s(arg))
     print('res:',task)
 
     return JSONResponse({"task_id": task.task_id})    
