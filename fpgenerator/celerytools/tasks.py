@@ -162,8 +162,8 @@ def callback_CDTOC_gen(result,*args):
                 #                                link=fp_post_processing_req)
             else:
                 scenario_result.append(cdtoc.cue_folder_check_scenario_processing(folder_name))
-                progress_recorder.set_progress(i + 1, max_progress, description=descr)
-                
+                progress_recorder.set_progress(i, max_progress, description=descr)
+                i+=1
 
     else:
         print("Error in callback_CDTOC_gen: None result")
