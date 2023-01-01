@@ -197,11 +197,15 @@ def find_live_jobs():
     return JSONResponse({"tasks": tasks})            
 
 @fp_router.get("/form/")
-def form_fp_process_get(request: Request):
-    return templates.TemplateResponse("form.html", {"request": request})
+def fp_form_process_get(request: Request):
+    return templates.TemplateResponse("fp_form.html", {"request": request})
+
+@cdtoc_router.get("/form/")
+def cdtoc_form_process_get(request: Request):
+    return templates.TemplateResponse("cdtoc_form.html", {"request": request})    
    
 @fp_router.post("/form/stop")
-def stop_fp_process(task_id: str):
+def fp_form_process_stop(task_id: str):
     if '\"' in task_id[0] and '\"' in task_id[-1]:
         task_id = task_id[1:-1]
         
@@ -209,8 +213,8 @@ def stop_fp_process(task_id: str):
     
     return JSONResponse({"stopped": current_celery_app.control.purge()})
     
-@fp_router.post("/form/start")
-def form_fp_process_start(folder_req_body: FolderRequestsBody):
+@fp_router.post("/fp/form/start")
+def fp_form_process_start(folder_req_body: FolderRequestsBody):
     arg = ''
     current_celery_app.control.purge()
     if folder_req_body.post_proc_flag:
@@ -226,7 +230,7 @@ def form_fp_process_start(folder_req_body: FolderRequestsBody):
 
     return JSONResponse({"task_id": task.task_id})    
 
-@cdtoc_router.post("/form/")
+@cdtoc_router.post("/cdtoc/form/start")
 def form_cdtoc_process_start(folder_req_body: FolderRequestsBody):
     arg = ''
     current_celery_app.control.purge()
