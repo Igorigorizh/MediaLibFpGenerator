@@ -116,20 +116,14 @@ def get_current_live_root_task():
 
 
 @fp_router.get("/flower/task_info/")
-def flower_task_info(task_id: str):
-    url = '{}/info/{}'.format(flower_task_api,task_id)
-    response_text=requests.get(url).text
-
-    if response_text:
-        response = json.loads(response_text)
-    else:
-        response = {
-            'error': 'No data in response',
-        }
-    
-    return JSONResponse(response)
+def flower_task_info_fp(task_id: str):
+    return flower_task_info(task_id)
  
 @cdtoc_router.get("/flower/task_info/")
+def flower_task_info_cdtoc(task_id: str):
+    return flower_task_info(task_id)
+
+
 def flower_task_info(task_id: str):
     url = '{}/info/{}'.format(flower_task_api,task_id)
     response_text=requests.get(url).text
@@ -237,6 +231,17 @@ def fp_form_process_stop(task_id: str):
     
     return JSONResponse({"stopped": current_celery_app.control.purge()})
     
+@cdtoc_router.post("/form/stop")
+def cdtoc_form_process_stop(task_id: str):
+    if '\"' in task_id[0] and '\"' in task_id[-1]:
+        task_id = task_id[1:-1]
+        
+    task = AsyncResult(task_id, app=current_celery_app)
+    return JSONResponse({"stopped": current_celery_app.control.purge()})
+
+
+
+
 @fp_router.post("/form/start")
 def fp_form_process_start(folder_req_body: FolderRequestsBody):
     arg = ''
@@ -296,9 +301,15 @@ def task_status(task_id: str):
         }
     return JSONResponse(response)
 
+@cdtoc_router.get("/current_task_progress/")
+def get_current_task_progress_cdtoc(task_id: str):
+    return get_current_task_progress(task_id)
  
 @fp_router.get("/folder_task_progress/")
-def get_task_progress(task_id: str):
+def get_current_task_progress_fp(task_id: str):
+    return get_current_task_progress(task_id)
+    
+def get_current_task_progress(task_id: str):
 
     if '\"' in task_id[0] and '\"' in task_id[-1]:
         task_id = task_id[1:-1]
@@ -364,7 +375,15 @@ def get_task_progress(task_id: str):
         }
     return JSONResponse(response)
     
-@fp_router.get("/task_sucessor/")        
+@fp_router.get("/task_sucessor/")
+def get_sucessor_fp(task_id: str):
+    return get_sucessor(task_id)
+    
+@cdtoc_router.get("/task_sucessor/")
+def get_sucessor_cdtoc(task_id: str):
+    return get_sucessor(task_id)
+
+
 def get_sucessor(task_id: str):    
     """ Lookup for a cucessor which is a callback by itself and has childs """
     

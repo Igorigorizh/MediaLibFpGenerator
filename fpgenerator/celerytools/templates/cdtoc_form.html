@@ -33,13 +33,13 @@
             <input type="text" class="form-control" id="path" name="path">
             <div class="form-check mb-3">
 				  <label class="form-check-label">
-					<input class="form-check-input" type="checkbox" id="fp_flag" name="cdtoc_flag"> Generate CDTOC
+					<input class="form-check-input" type="checkbox" id="cdtoc_flag" name="cdtoc_flag"> Generate CDTOC
 				  </label>
 			</div>
 			
 			<div class="form-check mb-3">
 				  <label class="form-check-label">
-					<input class="form-check-input" type="checkbox" id="post_proc_flag" name="post_proc_flag"> with acoustId and MusicBrainz meta data request
+					<input class="form-check-input" type="checkbox" id="post_proc_flag" name="post_proc_flag"> with MusicBrainz meta data request
 				  </label>
 				</div>
 				
@@ -77,7 +77,7 @@
 	  <BR> <BR>  <BR> <BR>
 	  <div class="row">
 	  <div class="col-13 col-md-15">
-	  <button type="button" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#log">Fp log data</button>
+	  <button type="button" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#log">CDTOC log data</button>
 		  <div id="log" class="collapse">
 			No data
 		  </div>
@@ -96,7 +96,7 @@
 		 alert('undefind-2')
 		 return
 		} else {
-		fetch(`/fp/task_sucessor/?task_id=${task_id}`, {
+		fetch(`/cdtoc/task_sucessor/?task_id=${task_id}`, {
 		  method: 'GET',
 		})
 		
@@ -188,7 +188,7 @@
 			const total = res.total;
 			const rt = res.runtime;
 			
-			msg.innerHTML = 'Overall fp progress:  '+succeed+" of "+total+ '. Total time: '+rt + '. Failed fp: ' + res.failed
+			msg.innerHTML = 'Overall CDTOC progress:  '+succeed+" of "+total+ '. Total time: '+rt + '. Failed CDTOC: ' + res.failed
 			
 			msg_album.innerHTML = 'Overall albums progress:  '+albums_succeeded+ " of "+ res.albums_total
 			
@@ -222,7 +222,7 @@
 		 alert('undefind task id in updateProgress')
 		 return
 		} else {
-		fetch(`/fp/folder_task_progress/?task_id=${task_id}`, {
+		fetch(`/cdtoc/current_task_progress/?task_id=${task_id}`, {
 		  method: 'GET',
 		})
 			
@@ -399,7 +399,7 @@
       msg.innerHTML = '';	
 		
 	// request stop 	
-      fetch('/fp/form/stop', {
+      fetch('/CDTOC/form/stop', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -423,7 +423,7 @@
   
   $(document).ready(function(){
 	control_submit_buttn('disable')
-	fetch(`/fp/get_current_root_task/`, {
+	fetch(`/cdtoc/get_current_root_task/`, {
       method: 'GET',
     })
 		
