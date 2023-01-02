@@ -243,7 +243,7 @@
 						  control_submit_buttn('enable')
 						  return
 					}
-				if ( $('#fp_flag').val() == 'on' ){	
+				if ( $('#cdtoc_flag').val() == 'on' ){	
 					getSucessor(bar_file, bar_album, task_id)
 				}
 				
@@ -303,7 +303,7 @@
       const msg = yourForm.querySelector('#messages');
       msg.innerHTML = '';	
 
-      fetch('/fp/form/start', {
+      fetch('/cdtoc/form/start', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -326,7 +326,7 @@
   });
   
   function get_task_args(task_id){
-	 fetch(`/fp/flower/task_info/?task_id=${task_id}`, {
+	 fetch(`/cdtoc/flower/task_info/?task_id=${task_id}`, {
       method: 'GET',
     }) 
 	
@@ -343,8 +343,8 @@
         );
  }  
   
-  function get_FP_gen_parent(task_id){
-	 fetch(`/fp/task_meta_data/?task_id=${task_id}`, {
+  function get_CDTOCK_gen_parent(task_id){
+	 fetch(`/cdtoc/task_meta_data/?task_id=${task_id}`, {
       method: 'GET',
     }) 
 	
@@ -439,13 +439,13 @@
 		
 		if ( ('root_id' in res )){
 			//alert(res.name)
-			if ( (res.root_name == "tasks.callback_FP_gen_2" )){
+			if ( (res.root_name == "tasks.callback_CDTOC_gen" )){
 				$("#taskRunAlertInfo").alert("close");	
 				const taskStatus = res.root_id;
 				const bar_file = document.querySelector('.progress-bar.file');
 				const bar_album = document.querySelector('.progress-bar.album');
-				$('#fp_flag').prop('checked', true)
-				get_FP_gen_parent(res.root_id)
+				$('#cdtock_flag').prop('checked', true)
+				get_CDTOC_gen_parent(res.root_id)
 				updateProgressBar_file(bar_file, bar_album,  res.root_id,);
 			} else {
 				
