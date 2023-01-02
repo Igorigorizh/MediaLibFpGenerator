@@ -161,7 +161,8 @@ def callback_CDTOC_gen(result,*args):
                 #task_fp_res = app.send_task('cdtoc.build_fp_task_param',(folder_name),\
                 #                                link=fp_post_processing_req)
             else:
-                scenario_result.append(cdtoc.cue_folder_check_scenario_processing(folder_name))
+                cdtoc_res = cdtoc.cue_folder_check_scenario_processing(folder_name)
+                scenario_result.append(cdtoc_res)
                 progress_recorder.set_progress(i, max_progress, description=descr)
                 i+=1
 
