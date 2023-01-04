@@ -152,7 +152,7 @@ def callback_CDTOC_gen(result,*args):
     folderL = result['result']
     print()
     print('args in callback_CDTOC_gen:',args)
-	failed = 0
+    failed = 0
     if folderL:
         max_progress = len(folderL)
         i = 0
