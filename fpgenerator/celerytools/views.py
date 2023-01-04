@@ -397,7 +397,8 @@ def get_current_task_progress(task_id: str):
     state = task.state
     res = celery_progress.backend.Progress(task).get_info()
     progress = res
-    #print('res:',res)
+    failed = 0
+    runtime = 0
     
     if state == 'FAILURE':
         error = str(task.result)
@@ -420,7 +421,15 @@ def get_current_task_progress(task_id: str):
                 return JSONResponse(response)
         
             if 'result' in res['result']:
-
+                if 'failed' in res['result']:
+                    failed = res['result']['failed']
+                    
+                try:
+                    if 'started_at' in task.result:
+                        runtime = sec2hour(time.time() - task.result['started_at'] )[:-3]
+                except Exception as e:
+                    print(f'Exception at time estimation: {e}')
+                    
                 if 'error' in res['result']['result']:
                     error = str(res['result']['result']['error'])
                     response = {
@@ -438,7 +447,9 @@ def get_current_task_progress(task_id: str):
                     'progress': res['progress']['percent'],
                     'total': res['result']['total_proceed'],
                     'succeed': res['result']['total_proceed'],
-                    'succeed_final':res['result']['total_proceed']
+                    'succeed_final':res['result']['total_proceed'],
+                    'runtime': runtime,
+                    'failed': failed
                 }
         else:
             response = {
