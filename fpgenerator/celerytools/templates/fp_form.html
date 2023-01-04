@@ -458,7 +458,12 @@
 				$('#fp_flag').prop('checked', true)
 				get_FP_gen_parent(res.root_id)
 				updateProgressBar_file(bar_file, bar_album,  res.root_id,);
-			} else {
+			} else if ( (res.root_name == "tasks.callback_CDTOC_gen" )){
+				alert('Warning: CDTOC Job is running')
+
+			}
+				else
+			{
 				
 				console.error('Error: wrong task type or root task failure:', res.root_name)
 				alert('Error: wrong task type or root task failure:'+ res.root_name)

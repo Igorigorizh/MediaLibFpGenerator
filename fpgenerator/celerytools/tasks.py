@@ -139,19 +139,20 @@ def worker_fingerprint_task(self, *args):
 @app.task(base=ProgressTask, name="tasks.callback_CDTOC_gen")
 def callback_CDTOC_gen(result,*args):
     # Прогресс всего процесса поальбомно расчитывается на основе cчетчика обработанных папок - folder_name in folderL.\
+    s_time = time.time()
     progress_recorder = ProgressRecorder(callback_CDTOC_gen)   
     descr = "medialib-job-CDTOC-scan-progress"    
     if 'error' in result['result']:
         error = result['result']['error']
-        logger.warning(f'Error in callback_FP_gen_2:{error}')
+        logger.warning(f'Error in callback_CDTOC_gen:{error}')
         return {'result':[], 'error':'No cdtoc process due to error on previouse step'}
     
     scenario_result = []    
     cdtoc = CdTocGenerator()    
     folderL = result['result']
     print()
-    print('args in callback_FP_gen_2:',args)
-	
+    print('args in callback_CDTOC_gen:',args)
+	failed = 0
     if folderL:
         max_progress = len(folderL)
         i = 0
@@ -162,6 +163,10 @@ def callback_CDTOC_gen(result,*args):
                 #                                link=fp_post_processing_req)
             else:
                 cdtoc_res = cdtoc.cue_folder_check_scenario_processing(folder_name)
+                if 'RC' in cdtoc_res:
+                    if cdtoc_res['RC'] < 1:
+                        failed +=1
+                        
                 scenario_result.append(cdtoc_res)
                 progress_recorder.set_progress(i, max_progress, description=descr)
                 i+=1
@@ -169,7 +174,7 @@ def callback_CDTOC_gen(result,*args):
     else:
         print("Error in callback_CDTOC_gen: None result")
 
-    return scenario_result
+    return {'started_at':s_time,'albums':len(folderL),'result':scenario_result,'total_proceed':i, 'failed':failed}   
 
 
 @app.task(name="tasks.callback_FP_gen_2")
