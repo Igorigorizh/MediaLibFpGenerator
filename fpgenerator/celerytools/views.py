@@ -32,7 +32,7 @@ flower_host_api = settings.FLOWER_API_URL
 flower_task_api = '{}/task'.format(flower_host_api)
 
 @fp_router.get("/get_current_root_task/")
-def get_current_live_root_task():
+def get_current_live_root_task_fp():
     root_task = []
     response = find_live_jobs()
     resp_body = json.loads(response.body.decode(encoding=response.charset))
@@ -113,6 +113,75 @@ def get_current_live_root_task():
                 return JSONResponse(response_item)
         else:
             return JSONResponse({'message':'no active tasks'})
+
+
+
+@cdtoc_router.get("/get_current_live_task/")
+def get_current_live_root_task_cdtoc():
+    root_task = []
+    response = find_live_jobs()
+    resp_body = json.loads(response.body.decode(encoding=response.charset))
+    #print('resp_body:',resp_body)
+    response_item = []
+    parent_tasks = []
+    parent_name = ''
+    if resp_body:
+        tasks = resp_body['tasks']
+
+        if tasks:
+            if len(resp_body['tasks']) == 1:
+                name = 'no-name-in-failure'
+                response = get_task_meta_data(tasks[0])
+                response_flower = flower_task_info(tasks[0])
+                resp_meta_body = json.loads(response.body.decode(encoding=response.charset))   
+                response_flower_body = json.loads(response_flower.body.decode(encoding=response_flower.charset)) 
+                
+                if resp_meta_body['state'] == 'FAILURE': 
+                    parent_id = resp_meta_body['parent_id']
+                    response = {
+                        'task_id': tasks[0],
+                        'state': resp_meta_body['state'],
+                        'parent_id': parent_id,
+                        'name': name 
+                    }
+                elif resp_meta_body['state'] != 'PENDING':     
+                    #print(resp_meta_body['name'],resp_meta_body['parent_id'])
+                    print('in ! PENDING+++++++++++++++++++++')
+                    name_response = get_task_meta_data(tasks[0])
+                    task = json.loads(name_response.body.decode(encoding=name_response.charset))
+                    parent_id = resp_meta_body['parent_id']
+
+                    if 'name' in task:
+                        name = task['name']
+
+       
+                    response = {
+                            'task_id': tasks[0],
+                            'state': resp_meta_body['state'],
+                            'parent_id': parent_id,
+                            'name': name
+                        }
+                elif resp_meta_body['state'] == 'PENDING':
+                    name_response = get_task_meta_data(response_flower_body['parent_id'])
+                    task = json.loads(name_response.body.decode(encoding=name_response.charset))
+                    parent_id = response_flower_body['parent_id']
+                            
+                    if 'name' in task:
+                        name = task['name']
+                        
+                    response = {
+                                'task_id': tasks[0],
+                                'state': response_flower_body['state'],
+                                'parent_id': response_flower_body['parent_id'],
+                                'name': name
+                    }
+                    
+
+            
+            return JSONResponse(response)
+        else:
+            return JSONResponse({'message':'no active tasks'})
+
 
 
 @fp_router.get("/flower/task_info/")
@@ -198,6 +267,13 @@ def get_task_meta_data(task_id: str):
     
 
 @fp_router.get("/tasks_live/")
+def find_live_jobs_fp():
+    return find_live_jobs()            
+    
+@cdtoc_router.get("/tasks_live/")
+def find_live_jobs_cdtoc():
+    return find_live_jobs()     
+    
 def find_live_jobs():
     i = current_celery_app.control.inspect()
     # scheduled(): tasks with an ETA or countdown
@@ -212,7 +288,7 @@ def find_live_jobs():
                     tasks.append(task_id)
            
           
-    return JSONResponse({"tasks": tasks})            
+    return JSONResponse({"tasks": tasks})                
 
 @fp_router.get("/form/")
 def fp_form_process_get(request: Request):
@@ -270,7 +346,11 @@ def form_cdtoc_process_start(folder_req_body: FolderRequestsBody):
         #task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',([folder_req_body.path],[],[],'initial'),link=callback_FP_gen.s(arg))
         task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',\
             ([folder_req_body.path],[],[],'initial'),link=callback_CDTOC_gen.s(arg))
+    else:
+        task = current_celery_app.send_task('find_new_music_folder-new_recogn_name',\
+            ([folder_req_body.path],[],[],'initial'))
     print('res:',task)
+        
 
     return JSONResponse({"task_id": task.task_id})    
 
@@ -366,7 +446,8 @@ def get_current_task_progress(task_id: str):
                     'progress': res['progress']['percent']
                 }
             
-    else:
+    else:   
+    # PENDING
         response = {
             'state': state,
             'progress': res['progress']['percent'],
