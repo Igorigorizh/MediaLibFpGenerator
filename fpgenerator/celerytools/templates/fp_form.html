@@ -39,7 +39,7 @@
 			
 			<div class="form-check mb-3">
 				  <label class="form-check-label">
-					<input class="form-check-input" type="checkbox" id="post_proc_flag" name="post_proc_flag"> with acoustId and MusicBrainz meta data request
+					<input class="form-check-input" type="checkbox" id="post_proc_flag" name="post_proc_flag"> with acoustId meta data request
 				  </label>
 				</div>
 				
@@ -173,6 +173,7 @@
 			 return;
 			}
 			}
+			control_submit_buttn('disable')
 			const msg = document.querySelector('#info-progress');
 			const msg_album = document.querySelector('#info-progress-album');
 			
@@ -297,6 +298,7 @@
   document.addEventListener("DOMContentLoaded", function() {
     const yourForm = document.getElementById("your-form");
     yourForm.addEventListener("submit", function(event) {
+	  reset_progress_bars()
 	  error_count = 0;
       event.preventDefault();
       // Get all field data from the form
@@ -397,6 +399,40 @@
 	  
   }
   
+  
+  function is_prev_fp_still_running(){
+	  fetch(`/fp/get_current_root_task/`, {
+      method: 'GET',
+    })
+		
+      .then(response => response.json())
+      .then((res) => {
+		if ( ('message' in res )){
+			if (res.message == "no active tasks"){
+			return false
+			} else {
+				
+			return true	
+			}	
+		}
+		
+		
+		
+	})
+	  
+  }
+  
+  
+  function reset_progress_bars() {
+	const bar_file = document.querySelector('.progress-bar.file');
+	const bar_folder = document.querySelector('.progress-bar.album');
+	bar_file.style.width="0%";          
+	bar_file.innerHTML="0%"+" (0:0)";
+	
+	bar_folder.style.width="0%";          
+	bar_folder.innerHTML="0%"+" (0:0)";
+  }
+  
   document.addEventListener("DOMContentLoaded", function() {
     const yourForm = document.getElementById("your-form");
     yourForm.addEventListener("stop", function(event) {
@@ -430,6 +466,8 @@
         );
     });
   });
+  
+  
   
   
   $(document).ready(function(){

@@ -162,6 +162,7 @@
 			 return;
 			}
 			}
+			control_submit_buttn('disable')
 			const msg = document.querySelector('#info-progress');
 			//const msg_album = document.querySelector('#info-progress-album');
 			
@@ -186,10 +187,12 @@
 				
 			const succeed = res.succeed;
 			const total = res.total;
-			const rt = ''; 
-			//res.runtime;
-			
-			msg.innerHTML = 'Overall CDTOC progress:  '+succeed+" of "+total+ '. Total time: '+rt + '. Failed CDTOC: '; //+ res.failed
+			const rt = res.runtime;
+			if ( res.failed ){
+				msg.innerHTML = 'Overall CDTOC progress:  '+succeed+" of "+total+ '. Total time: '+rt + '. Failed CDTOC: ' + res.failed
+			} else {
+				msg.innerHTML = 'Overall CDTOC progress:  '+succeed+" of "+total+ '. Total time: '+rt;
+			}		
 			
 			//msg_album.innerHTML = 'Overall albums progress:  '+albums_succeeded+ " of "+ res.albums_total
 			
@@ -283,17 +286,27 @@
     }
     return obj;
   }
+  
+  function reset_progress_bars() {
+	const bar_file = document.querySelector('.progress-bar.file');
+	const bar_folder = document.querySelector('.progress-bar.folder');
+	bar_file.style.width="0%";          
+	bar_file.innerHTML="0%"+" (0:0)";
+  }
 
   document.addEventListener("DOMContentLoaded", function() {
     const yourForm = document.getElementById("your-form");
+	
     yourForm.addEventListener("submit", function(event) {
+	  reset_progress_bars()
 	  error_count = 0;
       event.preventDefault();
       // Get all field data from the form
+	  
       let data = new FormData(yourForm);
       // Convert to an object
       let formData = serialize(data);
-
+			
 	  if ( !formData.path){
 		console.error('Error:', "Empty path")
 		return
@@ -421,8 +434,37 @@
     });
   });
   
+    function is_prev_fp_still_running(){
+	  fetch(`/fp/get_current_root_task/`, {
+      method: 'GET',
+    })
+		
+      .then(response => response.json())
+      .then((res) => {
+		if ( ('message' in res )){
+			if (res.message == "no active tasks"){
+			return false
+			} else {
+				
+			return true	
+			}	
+		}
+		
+		
+		
+	})
+	  
+  }
+  
   
   $(document).ready(function(){
+	if ( is_prev_fp_still_running() ) {
+				alert("running")
+			} else {
+
+					alert("not running")
+			}  
+			
 	control_submit_buttn('disable')
 	fetch(`/cdtoc/get_current_live_task/`, {
       method: 'GET',
@@ -430,6 +472,7 @@
 		
       .then(response => response.json())
       .then((res) => {
+			
 		if ( ('message' in res )){
 			if (res.message == "no active tasks"){
 			$("#taskRunAlertInfo").alert("close");
