@@ -435,7 +435,8 @@
   });
   
     function is_prev_fp_still_running(){
-	  fetch(`/fp/get_current_root_task/`, {
+		// Check that tasks in FP endpoint are not running
+		fetch(`/fp/get_current_root_task/`, {
       method: 'GET',
     })
 		
@@ -443,30 +444,26 @@
       .then((res) => {
 		if ( ('message' in res )){
 			if (res.message == "no active tasks"){
-			return false
-			} else {
-				
-			return true	
-			}	
+				prepare_ui()
+			return 0;
+
+		}} else if ('root_name' in res) {
+			if (res.root_name == 'tasks.callback_FP_gen_2') {
+				alert("running !!!")
+				$("#taskRunAlertInfo").alert("close");
+				control_submit_buttn('disable')
+				return 1;	
+			}
+		}	
 		}
 		
-		
-		
-	})
+	)
 	  
   }
   
   
-  $(document).ready(function(){
-	if ( is_prev_fp_still_running() ) {
-				alert("running")
-			} else {
-
-					alert("not running")
-			}  
-			
-	control_submit_buttn('disable')
-	fetch(`/cdtoc/get_current_live_task/`, {
+  function prepare_ui(){
+	 fetch(`/cdtoc/get_current_live_task/`, {
       method: 'GET',
     })
 		
@@ -482,14 +479,12 @@
 		}
 		
 		if ( ('task_id' in res )){
-			//alert(res.name)
 			if ( (res.name == "tasks.callback_CDTOC_gen" )){
 				$("#taskRunAlertInfo").alert("close");	
 				const taskStatus = res.task_id;
 				const bar_file = document.querySelector('.progress-bar.file');
 				const bar_album = document.querySelector('.progress-bar.album');
 				$('#cdtoc_flag').prop('checked', true)
-				//alert(res.root_id)
 				get_CDTOC_gen_parent(res.task_id)
 				
 				
@@ -505,8 +500,14 @@
         .catch((error) => {
             console.error('Error:', error)
           }
-        );
-			
+        ); 
+	  
+  }
+  
+  
+  $(document).ready(function(){
+	control_submit_buttn('disable')  
+	is_run = is_prev_fp_still_running()  
 		
   $(".close").click(function(){
     $("#taskRunAlertInfo").alert("close");
