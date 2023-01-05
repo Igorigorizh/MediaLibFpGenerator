@@ -468,10 +468,34 @@
   });
   
   
+  function is_prev_cdtoc_still_running(){
+		// Check that tasks in FP endpoint are not running
+		fetch(`/cdtoc/get_current_live_task/`, {
+      method: 'GET',
+    })
+		
+      .then(response => response.json())
+      .then((res) => {
+		if ( ('message' in res )){
+			if (res.message == "no active tasks"){
+				prepare_ui()
+			return 0;
+
+		}} else if ('root_name' in res) {
+			if (res.root_name == 'tasks.callback_FP_gen_2') {
+				alert("running !!!")
+				$("#taskRunAlertInfo").alert("close");
+				control_submit_buttn('disable')
+				return 1;	
+			}
+		}	
+		}
+		
+	)
+	  
+  }
   
-  
-  $(document).ready(function(){
-	control_submit_buttn('disable')
+  function prepare_ui(){
 	fetch(`/fp/get_current_root_task/`, {
       method: 'GET',
     })
@@ -513,6 +537,14 @@
             console.error('Error:', error)
           }
         );
+  }
+  
+  
+  
+  $(document).ready(function(){
+	control_submit_buttn('disable')
+	is_prev_cdtoc_still_running()
+	
 			
 		
   $(".close").click(function(){
