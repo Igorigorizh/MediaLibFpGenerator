@@ -501,7 +501,7 @@
       .then(response => response.json())
       .then((res) => {
 		if ( ('message' in res )){
-			if (res.message == "no active tasks"){
+			if (res.message == "no active FP tasks"){
 			$("#taskRunAlertInfo").alert("close");
 			$("#taskRunAlertWarn").alert("close");
 			control_submit_buttn('enable')
