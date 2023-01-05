@@ -476,7 +476,7 @@
       .then((res) => {
 			
 		if ( ('message' in res )){
-			if (res.message == "no active tasks"){
+			if (res.message == "no active CDTOC tasks"){
 			$("#taskRunAlertInfo").alert("close");
 			$("#taskRunAlertWarn").alert("close");
 			control_submit_buttn('enable')
