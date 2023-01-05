@@ -168,7 +168,7 @@ def callback_CDTOC_gen(result,*args):
                         if cdtoc_res['RC'] < 1:
                             failed +=1
                 else:
-                    cdtoc_res = {'RC': -2, f'error: Result is None for: [{folder_name}]'}
+                    cdtoc_res = {'RC': -2, 'error': f'Result is None for: [{folder_name}]'}
                         
                 scenario_result.append(cdtoc_res)
                 progress_recorder.set_progress(i, max_progress, description=descr)
