@@ -443,16 +443,21 @@
       .then(response => response.json())
       .then((res) => {
 		if ( ('message' in res )){
-			if (res.message == "no active tasks"){
+			if (res.message == "no active FP tasks"){
 				prepare_ui()
 			return 0;
 
 		}} else if ('root_name' in res) {
 			if (res.root_name == 'tasks.callback_FP_gen_2') {
-				alert("running !!!")
 				$("#taskRunAlertInfo").alert("close");
+				const warn = document.querySelector('.alert.alert-warning');
+				warn.innerHTML="<strong>Warning!</strong> Running FP generation tasks found. Till it is finished do not start tasks any more!"
 				control_submit_buttn('disable')
 				return 1;	
+			} 
+			else if ( res.root_name.includes('find_new_music_folder')) {
+				prepare_ui()
+			return 0;
 			}
 		}	
 		}
@@ -507,7 +512,7 @@
   
   $(document).ready(function(){
 	control_submit_buttn('disable')  
-	is_run = is_prev_fp_still_running()  
+	is_prev_fp_still_running()  
 		
   $(".close").click(function(){
     $("#taskRunAlertInfo").alert("close");
