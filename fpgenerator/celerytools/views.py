@@ -176,6 +176,8 @@ def get_current_live_root_task_cdtoc():
                                 'parent_id': response_flower_body['parent_id'],
                                 'name': name
                     }
+                    
+                return JSONResponse(response)    
             
             else:
                 return JSONResponse({'message':'no active CDTOC tasks'})
