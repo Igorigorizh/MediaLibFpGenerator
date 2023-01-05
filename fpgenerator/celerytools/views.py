@@ -112,7 +112,7 @@ def get_current_live_root_task_fp():
             else:
                 return JSONResponse(response_item)
         else:
-            return JSONResponse({'message':'no active tasks'})
+            return JSONResponse({'message':'no active FP tasks'})
 
 
 
@@ -129,8 +129,9 @@ def get_current_live_root_task_cdtoc():
         tasks = resp_body['tasks']
 
         if tasks:
+            # cdtoc can have only one child
+            name = 'no-name-in-failure'
             if len(resp_body['tasks']) == 1:
-                name = 'no-name-in-failure'
                 response = get_task_meta_data(tasks[0])
                 response_flower = flower_task_info(tasks[0])
                 resp_meta_body = json.loads(response.body.decode(encoding=response.charset))   
@@ -175,12 +176,11 @@ def get_current_live_root_task_cdtoc():
                                 'parent_id': response_flower_body['parent_id'],
                                 'name': name
                     }
-                    
-
             
-            return JSONResponse(response)
+            else:
+                return JSONResponse({'message':'no active CDTOC tasks'})
         else:
-            return JSONResponse({'message':'no active tasks'})
+            return JSONResponse({'message':'no active CDTOC tasks'})
 
 
 

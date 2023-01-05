@@ -415,9 +415,6 @@
 			return true	
 			}	
 		}
-		
-		
-		
 	})
 	  
   }
@@ -477,15 +474,16 @@
       .then(response => response.json())
       .then((res) => {
 		if ( ('message' in res )){
-			if (res.message == "no active tasks"){
+			if (res.message == "no active CDTOC tasks"){
 				prepare_ui()
 			return 0;
 
-		}} else if ('root_name' in res) {
-			if (res.root_name == 'tasks.callback_FP_gen_2') {
-				alert("running !!!")
+		}} else if ('name' in res) {
+			if (res.name == 'tasks.callback_CDTOC_gen') {
 				$("#taskRunAlertInfo").alert("close");
 				control_submit_buttn('disable')
+				const warn = document.querySelector('.alert.alert-warning');
+				warn.innerHTML="<strong>Warning!</strong> Running CDTOC tasks found. Do not start any more tasks!"
 				return 1;	
 			}
 		}	
