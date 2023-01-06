@@ -182,6 +182,10 @@
 			var taskProgress_album = 0;
 			var albums_succeeded = res.albums_succeeded - 1;
 			
+			if (albums_succeeded < 0){
+					albums_succeeded=0
+					}
+			
 			if (( res.albums_total != 0) && (res.progress !=100)) {
 				taskProgress_album = Math.round((albums_succeeded/res.albums_total)*100);
 			} 
@@ -189,6 +193,7 @@
 			if ( (taskProgress < 100 ) && (taskProgress_album == 100)) {
 				taskProgress_album = 99;
 				albums_succeeded -=1
+				
 			} 
 			
 			if ( (taskProgress == 100 ) && (taskProgress_album < 100)) {
@@ -423,6 +428,12 @@
   function reset_progress_bars() {
 	const bar_file = document.querySelector('.progress-bar.file');
 	const bar_folder = document.querySelector('.progress-bar.album');
+	const msg = document.querySelector('#info-progress');
+	const msg_2 = document.querySelector('#messages');
+    
+	msg.innerHTML = 'Overall fp progress';
+	msg_2.innerHTML = '';
+	
 	bar_file.style.width="0%";          
 	bar_file.innerHTML="0%"+" (0:0)";
 	
