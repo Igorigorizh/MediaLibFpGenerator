@@ -50,6 +50,7 @@ def get_current_live_root_task_fp():
                 response_flower = flower_task_info(task)
                 resp_meta_body = json.loads(response.body.decode(encoding=response.charset))   
                 response_flower_body = json.loads(response_flower.body.decode(encoding=response_flower.charset)) 
+                
                 if resp_meta_body['state'] == 'FAILURE': 
                     parent_id = resp_meta_body['parent_id']
                     parent_tasks.append(parent_id)
@@ -57,28 +58,39 @@ def get_current_live_root_task_fp():
                         'task_id': task,
                         'state': resp_meta_body['state'],
                         'parent_id': parent_id,
-                        'name': name 
+                        'name': name,
+                        'parent_name': None
                     }
                     response_item.append(response)
                     continue
-                if resp_meta_body['state'] != 'PENDING':     
-                    #print(resp_meta_body['name'],resp_meta_body['parent_id'])
-                    parent_name_response = get_task_meta_data(resp_meta_body['parent_id'])
-                    parent = json.loads(parent_name_response.body.decode(encoding=parent_name_response.charset))
-                    parent_id = resp_meta_body['parent_id']
-                    parent_tasks.append(parent_id)
+                    
+                    
+                if resp_meta_body['state'] != 'PENDING':
+                    name = resp_meta_body['name']
+                    print(resp_meta_body['name'],resp_meta_body['parent_id'])
+                    if resp_meta_body['parent_id']:
+                        parent_name_response = get_task_meta_data(resp_meta_body['parent_id'])
+                        parent = json.loads(parent_name_response.body.decode(encoding=parent_name_response.charset))
+                    
+                        parent_id = resp_meta_body['parent_id']
+                        parent_tasks.append(parent_id)
 
-                    if 'name' in parent:
-                        name = parent['name']
-                            
+                        if 'name' in parent:
+                            parent_name = parent['name']
+                    else:
+                        parent_id = None
+                        parent_name = None
+                        
                     response = {
                         'task_id': task,
                         'state': resp_meta_body['state'],
                         'parent_id': parent_id,
-                        'name': name
+                        'name': name,
+                        'parent_name': parent_name
                         
                     }
                 elif resp_meta_body['state'] == 'PENDING':
+                    print('----------Pending:',resp_meta_body['name'])
                     
                     if 'parent_id' in response_flower_body:
                         parent_name_response = get_task_meta_data(response_flower_body['parent_id'])
@@ -87,12 +99,13 @@ def get_current_live_root_task_fp():
                         parent_tasks.append(parent_id)
                         
                         if 'name' in parent:
-                            name = parent['name']
+                            parent_name = parent['name']
                         response = {
                             'task_id': task,
                             'state': response_flower_body['state'],
                             'parent_id': response_flower_body['parent_id'],
-                            'name': name
+                            'name': name,
+                            'parent_name': parent_name
                         }
                     else:
                         #print("------------********---------->",resp_meta_body)
@@ -106,9 +119,9 @@ def get_current_live_root_task_fp():
                 response_item.append(response) 
             if parent_tasks:    
                 if len(set(parent_tasks)) == 1:
-                    return JSONResponse({'root_id': parent_tasks[0], 'root_name': name})
+                    return JSONResponse({'root_id': parent_tasks[0], 'root_name': parent_name})
                 else:
-                    return JSONResponse({'root_id': parent_tasks[0][0], 'root_name': name})
+                    return JSONResponse({'root_id': parent_tasks[0][0], 'root_name': parent_name})
             else:
                 return JSONResponse(response_item)
         else:
