@@ -498,6 +498,8 @@
 				return 1;	
 			} else if ( res.name.includes('find_new_music_folder')) {
 				alert('get:'+res.name)
+				const bar_folder = document.querySelector('.progress-bar.folder');
+				updateProgressBar_folder(bar_folder, res)
 			}
 		}	
 		}
