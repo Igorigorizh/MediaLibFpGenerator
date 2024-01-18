@@ -59,14 +59,14 @@ class ProductionConfig(BaseConfig):
 
 class TestingConfig(BaseConfig):
     # https://fastapi.tiangolo.com/advanced/testing-database/
-    FLOWER_API_URL: str = os.environ.get("FLOWER_API_URL", "http://192.168.1.65:5556/api")
+    FLOWER_API_URL: str = os.environ.get("FLOWER_API_URL", "http://192.168.1.63:5556/api")
     DATABASE_URL: str = "sqlite:///./test.db"
     DATABASE_CONNECT_DICT: dict = {"check_same_thread": False}
 
-    CELERY_BROKER_URL: str = os.environ.get("CELERY_BROKER_URL", "redis://192.168.1.65:6379")
-    CELERY_RESULT_BACKEND: str = os.environ.get("CELERY_RESULT_BACKEND", "redis://192.168.1.65:6379")
+    CELERY_BROKER_URL: str = os.environ.get("CELERY_BROKER_URL", "redis://192.168.1.63:6379")
+    CELERY_RESULT_BACKEND: str = os.environ.get("CELERY_RESULT_BACKEND", "redis://192.168.1.63:6379")
 
-    WS_MESSAGE_QUEUE: str = os.environ.get("WS_MESSAGE_QUEUE", "redis://192.168.1.65:6379")
+    WS_MESSAGE_QUEUE: str = os.environ.get("WS_MESSAGE_QUEUE", "redis://192.168.1.63:6379")
 	
 
 
