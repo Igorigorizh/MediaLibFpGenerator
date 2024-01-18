@@ -76,15 +76,17 @@ def MB_get_releases_by_discid_celery_wrapper(self, *discID_arg):
         return {'RC': -6, 'error': str(e)}
 
     if 'disc' not in MB_discID_result:
-        return {'RC':-7,'error':'DiskID MB - NOT detected','MB_discID_result':MB_discID_result}
+        return {'RC': -7, 'error': 'DiskID MB - NOT detected','MB_discID_result':MB_discID_result}
 
 
     return {'RC':1,'MB_discID_result':MB_discID_result}
 
+
 async def acoustID_lookup_wrapper(fp):
     API_KEY = 'cSpUJKpD'
-    meta = ["recordings","recordingids","releases","releaseids","releasegroups","releasegroupids", "tracks", "compress", "usermeta", "sources"]
+    meta = ["recordings", "recordingids", "releases", "releaseids", "releasegroups", "releasegroupids", "tracks", "compress", "usermeta", "sources"]
     return acoustid.lookup(API_KEY, fp[1], fp[0], meta)	
+
 
 async def acoustID_lookup_wrapper_parent(fp):
     return await acoustID_lookup_wrapper(fp)

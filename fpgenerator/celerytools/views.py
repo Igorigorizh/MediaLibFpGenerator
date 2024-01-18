@@ -90,7 +90,7 @@ def get_current_live_root_task_fp():
                         
                     }
                 elif resp_meta_body['state'] == 'PENDING':
-                    print('----------Pending:',resp_meta_body['name'])
+                    print('----------Pending:', resp_meta_body['name'])
                     
                     if 'parent_id' in response_flower_body:
                         parent_name_response = get_task_meta_data(response_flower_body['parent_id'])
@@ -283,12 +283,13 @@ def get_task_meta_data(task_id: str):
 
 @fp_router.get("/tasks_live/")
 def find_live_jobs_fp():
-    return find_live_jobs()            
-    
+    return find_live_jobs()
+
 @cdtoc_router.get("/tasks_live/")
 def find_live_jobs_cdtoc():
-    return find_live_jobs()     
-    
+    return find_live_jobs()
+
+
 def find_live_jobs():
     i = current_celery_app.control.inspect()
     # scheduled(): tasks with an ETA or countdown
@@ -301,9 +302,9 @@ def find_live_jobs():
                 for task in task_list:
                     task_id = task.get("request", {}).get("id", None) or task.get("id", None)
                     tasks.append(task_id)
-           
-          
-    return JSONResponse({"tasks": tasks})                
+
+    return JSONResponse({"tasks": tasks})
+
 
 @fp_router.get("/form/")
 def fp_form_process_get(request: Request):

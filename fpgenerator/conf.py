@@ -13,7 +13,7 @@ def route_task(name, args, kwargs, options, task=None, **kw):
 
 
 class BaseConfig:
-    FLOWER_API_URL: str = os.environ.get("FLOWER_API_URL", "http://dashboard:5555/api") 
+    FLOWER_API_URL: str = os.environ.get("FLOWER_API_URL", "http://dashboard:5555/api")
     BASE_DIR: pathlib.Path = pathlib.Path(__file__).parent.parent
     #UPLOADS_DEFAULT_DEST: str = str(BASE_DIR / "upload")
 
@@ -68,7 +68,6 @@ class TestingConfig(BaseConfig):
 
     WS_MESSAGE_QUEUE: str = os.environ.get("WS_MESSAGE_QUEUE", "redis://192.168.1.63:6379")
 	
-
 
 @lru_cache()
 def get_settings():
