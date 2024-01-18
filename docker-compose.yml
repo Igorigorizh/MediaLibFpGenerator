@@ -65,6 +65,7 @@ volumes:
    log:
    db:
    music:
+   fpgenerator:
      driver: local
      driver_opts:
         device: "${DEVICE}"
