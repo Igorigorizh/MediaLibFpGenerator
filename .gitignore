@@ -155,3 +155,4 @@ music/
 config/
 data/
 log/
+*.code-workspace
