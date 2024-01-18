@@ -51,12 +51,12 @@ def get_task_info(task_id):
             "state": task.state,
         }
     return response
-	
-		
+
+
 def acoustID_lookup_celery_wrapper(self,*fp_args):
     scoreL = fp_item = []
     err_cnt = 0
-	
+
     print('fp:',fp_args)
     API_KEY = 'cSpUJKpD'
     meta = ["recordings","recordingids","releases","releaseids","releasegroups","releasegroupids", "tracks", "compress", "usermeta", "sources"]
@@ -84,7 +84,18 @@ def MB_get_releases_by_discid_celery_wrapper(self, *discID_arg):
 
 async def acoustID_lookup_wrapper(fp):
     API_KEY = 'cSpUJKpD'
-    meta = ["recordings", "recordingids", "releases", "releaseids", "releasegroups", "releasegroupids", "tracks", "compress", "usermeta", "sources"]
+    meta = [
+        "recordings",
+        "recordingids",
+        "releases",
+        "releaseids",
+        "releasegroups",
+        "releasegroupids",
+        "tracks",
+        "compress",
+        "usermeta",
+        "sources"
+    ]
     return acoustid.lookup(API_KEY, fp[1], fp[0], meta)	
 
 

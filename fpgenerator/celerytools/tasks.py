@@ -166,7 +166,7 @@ def callback_CDTOC_gen(result,*args):
                 if cdtoc_res:
                     if 'RC' in cdtoc_res:
                         if cdtoc_res['RC'] < 1:
-                            failed +=1
+                            failed += 1
                 else:
                     cdtoc_res = {'RC': -2, 'error': f'Result is None for: [{folder_name}]'}
                         
@@ -181,7 +181,7 @@ def callback_CDTOC_gen(result,*args):
 
 
 @app.task(name="tasks.callback_FP_gen_2")
-def callback_FP_gen_2(result,*args):
+def callback_FP_gen_2(result, *args):
     # Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задач.\
     # Ниже только формируется план
     # scheduler.get_fp_overall_progress(root_task=res.children[0]), где res = get_async_res_via_id('592027a3-2d10-4f27-934e-fc2f6b67dc1e')
