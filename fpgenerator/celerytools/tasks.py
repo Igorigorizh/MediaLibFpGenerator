@@ -166,13 +166,13 @@ def callback_CDTOC_gen(result,*args):
                 if cdtoc_res:
                     if 'RC' in cdtoc_res:
                         if cdtoc_res['RC'] < 1:
-                            failed +=1
+                            failed += 1
                 else:
                     cdtoc_res = {'RC': -2, 'error': f'Result is None for: [{folder_name}]'}
                         
                 scenario_result.append(cdtoc_res)
                 progress_recorder.set_progress(i, max_progress, description=descr)
-                i+=1
+                i += 1
 
     else:
         print("Error in callback_CDTOC_gen: None result")
@@ -181,7 +181,7 @@ def callback_CDTOC_gen(result,*args):
 
 
 @app.task(name="tasks.callback_FP_gen_2")
-def callback_FP_gen_2(result,*args):
+def callback_FP_gen_2(result, *args):
     # Прогресс всего процесса поальбомно расчитывается на основе значения статуса запланированных задач.\
     # Ниже только формируется план
     # scheduler.get_fp_overall_progress(root_task=res.children[0]), где res = get_async_res_via_id('592027a3-2d10-4f27-934e-fc2f6b67dc1e')
@@ -193,7 +193,7 @@ def callback_FP_gen_2(result,*args):
     fp = FpGenerator()    
     folderL = result['result']
     print()
-    print('args in callback_FP_gen_2:',args)
+    print('args in callback_FP_gen_2:', args)
     s_time = time.time()
     if folderL:
         for folder_name in folderL:
@@ -203,17 +203,20 @@ def callback_FP_gen_2(result,*args):
                 #                                link=fp_post_processing_req)
             else:
                 scenario_result = fp.cue_folder_check_scenario_processing(folder_name)
+                if not scenario_result:
+                    logger.critical(f'Error in callback_FP_gen_2:{folder_name} None result from  identified scenario')
+                    continue
                 if 'scenario' in scenario_result:
                     if scenario_result['scenario'] == 'single_image_CUE':
                         # call worker with splitting
-                        for item_params in scenario_result['params']: 
-                            res_fp = app.send_task('worker_ffmpeg_and_fingerprint_task',(item_params))
+                        for item_params in scenario_result['params']:
+                            res_fp = app.send_task('worker_ffmpeg_and_fingerprint_task', (item_params))
       
                     else:
                         # call fp generator worker
                         for item_params in scenario_result['params']: 
                             logger.debug(f'in callback_FP_gen_2:{item_params}')
-                            res_fp = app.send_task('worker_fingerprint_task',(item_params,))
+                            res_fp = app.send_task('worker_fingerprint_task', (item_params,))
                 else:
                     logger.critical(f'Error in callback_FP_gen_2:{folder_name} not identified scenario' )
 
